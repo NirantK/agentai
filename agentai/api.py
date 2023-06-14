@@ -42,6 +42,7 @@ def chat_complete(
         headers=headers,
         json=json_data,
     )
+    response.raise_for_status()
     if return_function_params:
         message = response.json()["choices"][0]
         if message["finish_reason"] == "function_call":
