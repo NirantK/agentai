@@ -45,3 +45,14 @@ class DBUtils:
             columns_names = self.get_column_names(table_name)
             table_dicts.append({"table_name": table_name, "column_names": columns_names})
         return table_dicts
+
+    @lru_cache()
+    def get_database_string(self):
+        database_schema_dict = self.get_database_info()
+        database_schema_string = "\n".join(
+            [
+                f"Table: {table['table_name']}\nColumns: {', '.join(table['column_names'])}"
+                for table in database_schema_dict
+            ]
+        )
+        return database_schema_string
