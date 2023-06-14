@@ -32,6 +32,14 @@ from typing import Any
 from docstring_parser import parse
 
 
+def docstring_parameters(**kwargs):
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(**kwargs)
+        return obj
+
+    return dec
+
+
 def parse_annotation(annotation):
     if getattr(annotation, "__origin__", None) == typing.Union:
         types = [t.__name__ if t.__name__ != "NoneType" else "None" for t in annotation.__args__]
