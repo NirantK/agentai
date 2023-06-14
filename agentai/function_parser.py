@@ -1,3 +1,7 @@
+"""
+This module contains the function parser, 
+uses docstring to give a JSON format that can be used by the OpenAI API.
+"""
 import inspect
 import json
 import typing
@@ -7,49 +11,33 @@ from docstring_parser import parse
 
 
 def to_json_schema_type(type_name: str) -> str:
-    """
-    Convert a Python type to a JSON type as asked by the OpenAPI spec.
-    Based on JSONSchema: https://json-schema.org/understanding-json-schema/
-    and OpenAI API Reference: https://platform.openai.com/docs/api-reference/chat/create
-
-    Args:
-        type_name (str): _description_
-
-    Returns:
-        str: _description_
-    """
     type_map = {
         "str": "string",
-        "int": "number",
+        "int": "integer",
         "float": "number",
         "bool": "boolean",
         "None": "null",
-        "Any": "AnyOf",
-        "Dict[str, Any]": "object",
+        "Any": "any",
+        "Dict": "object",
+        "List": "array",
+        "Optional": "any",
     }
-    return type_map.get(type_name, "AnyOf")
+    return type_map.get(type_name, "any")
 
 
 def parse_annotation(annotation):
-    """
-    Parse the annotation of a function parameter.
-
-    Args:
-        annotation (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
     if getattr(annotation, "__origin__", None) == typing.Union:
         types = [t.__name__ if t.__name__ != "NoneType" else "None" for t in annotation.__args__]
-        return f"Optional[{types[0]}]"
+        return to_json_schema_type("Optional"), to_json_schema_type(types[0])
     elif getattr(annotation, "__origin__", None) is not None:
         if annotation._name is not None:
-            return f"{annotation._name}[{','.join([i.__name__ for i in annotation.__args__])}]"
+            return to_json_schema_type(annotation._name), [to_json_schema_type(i.__name__) for i in annotation.__args__]
         else:
-            return f"{annotation.__origin__.__name__}[{','.join([i.__name__ for i in annotation.__args__])}]"
+            return to_json_schema_type(annotation.__origin__.__name__), [
+                to_json_schema_type(i.__name__) for i in annotation.__args__
+            ]
     else:
-        return annotation.__name__
+        return to_json_schema_type(annotation.__name__), None
 
 
 def get_function_info(func: Any) -> str:
@@ -61,9 +49,12 @@ def get_function_info(func: Any) -> str:
     required = []
 
     for name, param in signature.parameters.items():
-        param_type = parse_annotation(param.annotation)
+        json_type, subtypes = parse_annotation(param.annotation)
 
-        param_info = {"type": param_type, "description": ""}
+        param_info = {"type": json_type, "description": ""}
+
+        if subtypes is not None and json_type == "array":
+            param_info["items"] = {"type": subtypes[0]}
 
         if param.default != inspect.Parameter.empty:
             if isinstance(param.default, str):
@@ -72,7 +63,7 @@ def get_function_info(func: Any) -> str:
                 param_info["default"] = str(param.default)
 
         # If the parameter type is not Optional and it's not 'self', it's required.
-        if not param_type.startswith("Optional") and name != "self":
+        if not json_type == "any" and name != "self":
             required.append(name)
 
         # Extract description from parsed docstring
