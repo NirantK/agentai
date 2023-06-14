@@ -1,5 +1,6 @@
+from typing import List, Optional, TypedDict
+
 from termcolor import colored
-from typing import Optional, List, TypedDict
 
 
 class Message(TypedDict):

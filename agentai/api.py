@@ -6,12 +6,13 @@ from typing import Callable
 import openai
 import requests
 from loguru import logger
-from tenacity import retry, stop_after_attempt, retry_unless_exception_type
+from tenacity import retry, retry_unless_exception_type, stop_after_attempt
 
 from .conversation import Conversation, Message
 from .openai_function import ToolRegistry
 
 logger.disable(__name__)
+
 
 class InvalidInputError(Exception):
     pass

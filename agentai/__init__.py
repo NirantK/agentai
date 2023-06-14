@@ -1,7 +1,6 @@
-from .conversation import Conversation
 from .api import chat_complete, chat_complete_execute_fn
-from .openai_function import tool, ToolRegistry
-
+from .conversation import Conversation
+from .openai_function import ToolRegistry, tool
 
 __all__ = [
     "Conversation",
