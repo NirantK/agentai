@@ -1,3 +1,4 @@
+import json
 from typing import List, Dict, Optional
 from agentai.function_parser import get_function_info
 
@@ -23,7 +24,7 @@ def get_articles(query: str, library: str = paper_dir_filepath, top_k: Optional[
 
 def test_get_function_info():
     """Test get_function_info"""
-    print(get_function_info(get_articles))
+    print(json.dumps(get_function_info(get_articles), indent=4))
     assert get_function_info(get_articles) == {
         "name": "get_articles",
         "description": "This function gets the top_k articles based on a user's query, sorted by relevance.",

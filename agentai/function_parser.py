@@ -3,7 +3,6 @@ This module contains the function parser,
 uses docstring to give a JSON format that can be used by the OpenAI API.
 """
 import inspect
-import json
 import typing
 from typing import Any
 
@@ -51,6 +50,7 @@ def get_function_info(func: Any) -> str:
 
         param_info = {"type": json_type, "description": ""}
 
+        # Parsing Default Arguments if needed
         # if param.default != inspect.Parameter.empty:
         #     if isinstance(param.default, str):
         #         param_info["default"] = param.default
@@ -77,4 +77,4 @@ def get_function_info(func: Any) -> str:
         },
         "required": required,
     }
-    return json.dumps(function_info, indent=4)
+    return function_info
