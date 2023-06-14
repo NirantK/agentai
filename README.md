@@ -30,9 +30,7 @@ pip install agentai
 
 ## Usage
 
-Here's a basic example of how you can use AgentAI:
-
-### Example 1: Asking User for Missing Inputs till all inputs are available
+### Getting Started: Asking User for Missing Inputs till all inputs are available
 
 1. **Import required classes and functions**
 
@@ -106,7 +104,7 @@ Output:
 {'location': 'Bengaluru, India', 'format': 'celsius'}
 ```
 
-### Example 2: Implement function execution logic (e.g., a database query)\*\*
+### Ramping up Usage: Implement function execution logic (e.g., a database query)
 
 1. **Define a function with `@function_info` decorator**
 
@@ -172,7 +170,7 @@ assistant: The top 5 artists by number of tracks are:
 5. Lost - 92 tracks
 ```
 
-## Example
+## Detailed Examples
 
 Check out our detailed [notebooks with examples](https://github.com/NirantK/agentai/nbs/) where we demonstrate how to integrate AgentAI with a chatbot to create a powerful conversational assistant that can answer questions using a SQLite database.
 
