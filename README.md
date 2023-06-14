@@ -186,7 +186,7 @@ assistant: The top 5 artists by number of tracks are:
 
 ## Detailed Examples
 
-Check out our detailed [notebooks with examples](https://github.com/NirantK/agentai/docs/) where we demonstrate how to integrate AgentAI with a chatbot to create a powerful conversational assistant that can answer questions using a SQLite database.
+Check out our detailed [notebooks with examples](./docs/) where we demonstrate how to integrate AgentAI with a chatbot to create a powerful conversational assistant that can answer questions using a SQLite database.
 
 ## Contributing
 
