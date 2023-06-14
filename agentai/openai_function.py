@@ -42,7 +42,7 @@ class ToolRegistry:
         """
         self.functions[func.__name__] = func
 
-    def get_function_info(self, func: Any) -> dict:
+    def get_function_info(self, func: Callable) -> dict:
         signature = inspect.signature(func)
         docstring = inspect.getdoc(func)
         docstring_parsed = parse(docstring)
