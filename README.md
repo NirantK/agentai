@@ -39,28 +39,27 @@ Install AgentAI using pip:
 pip install agentai
 ```
 
-## Usage
-
-### Getting Started: Asking User for Missing Inputs till all inputs are available
+## Getting Started: Asking User for Missing Inputs till all inputs are available
 
 1. **Import required classes and functions**
 
 ```python
-from agentai.api import chat_complete
+from agentai.api import chat_complete, chat_complete_execute_fn
+from agentai.openai_function import tool, ToolRegistry
 from agentai.conversation import Conversation
-from agentai.function_parser import tool
+from enum import Enum
+weather_registry = ToolRegistry()
 ```
 
 2. **Define a function with `@tool` decorator**
 
 ```python
-
-from enum import Enum
 class TemperatureUnit(Enum):
     celsius = "celsius"
     fahrenheit = "fahrenheit"
 
-@tool
+
+@tool(regsitry=weather_registry)
 def get_current_weather(location: str, format: TemperatureUnit) -> str:
     """
     Get the current weather
@@ -88,9 +87,8 @@ conversation.add_message("user", "what is the weather like today?")
 4. **Use the `chat_complete` function to get a response from the model**
 
 ```python
-registered_functions = [get_current_weather]
-functions = [json.loads(func.json_info) for func in registered_functions]
-chat_response = chat_complete(conversation.conversation_history, functions=functions)
+chat_response = chat_complete(conversation.conversation_history, function_registry=weather_registry, model=GPT_MODEL)
+
 ```
 
 Output:
@@ -105,11 +103,10 @@ Output:
 Once the user provides the required information, the model can generate the function arguments:
 
 ```python
-
 conversation.add_message("user", "I'm in Bengaluru, India")
-chat_response = chat_complete(conversation.conversation_history, functions=functions, model=GPT_MODEL)
+chat_response = chat_complete(conversation.conversation_history, function_registry=weather_registry, model=GPT_MODEL)
 
-chat_response.json()["choices"][0]["message"]["function_call"]["arguments"]
+eval(chat_response.json()["choices"][0]["message"]["function_call"]["arguments"])
 ```
 
 Output:
@@ -118,7 +115,7 @@ Output:
 {'location': 'Bengaluru, India', 'format': 'celsius'}
 ```
 
-### Ramping up Usage: Implement function execution logic (e.g., a database query)
+## Example: Doing a Database Query with Generated SQL
 
 1. **Define a function with `@tool` decorator**
 
