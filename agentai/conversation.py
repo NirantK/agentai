@@ -5,8 +5,11 @@ class Conversation:
     def __init__(self):
         self.conversation_history = []
 
-    def add_message(self, role, content):
-        message = {"role": role, "content": content}
+    def add_message(self, role, content, name=None):
+        if name:
+            message = {"role": role, "name": name, "content": content}
+        else:
+            message = {"role": role, "content": content}
         self.conversation_history.append(message)
 
     def display_conversation(self, detailed=False):
