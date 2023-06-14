@@ -46,7 +46,7 @@ def get_function_arguments(message, conversation, functions, model):
             print("Syntax error, trying again")
             response = chat_complete(conversation.conversation_history, functions=functions, model=model)
             message = response.json()["choices"][0]
-            function_arguments = get_function_arguments(message)
+            function_arguments = get_function_arguments(message, conversation, functions, model)
     else:
         print("Function not required, responding to user")
     return function_arguments
