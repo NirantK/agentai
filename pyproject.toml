@@ -5,6 +5,7 @@ description = "Python library which wraps OpenAI Functions and makes them easier
 authors = ["NirantK <nirant.bits@gmail.com>"]
 license = "Apache"
 readme = "README.md"
+packages = [{include = "agentai"}]
 
 [tool.poetry.dependencies]
 python = "3.9, 3.10"
