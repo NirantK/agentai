@@ -1,10 +1,12 @@
 from termcolor import colored
 from typing import Optional, List, TypedDict
 
+
 class Message(TypedDict):
     role: str
     content: str
     name: Optional[str]
+
 
 class Conversation:
     def __init__(self):

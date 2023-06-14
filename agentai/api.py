@@ -16,8 +16,9 @@ logger.disable(__name__)
 
 @retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(3))
 def chat_complete(
-    messages, model, function_registry: ToolRegistry = None, return_function_params: bool = False
+    conversation: Conversation, model, function_registry: ToolRegistry = None, return_function_params: bool = False
 ):
+    messages = conversation.history
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
     headers = {
@@ -58,9 +59,7 @@ def get_function_arguments(message, conversation: Conversation, function_registr
             function_arguments = eval(arguments)
         except SyntaxError:
             print("Syntax error, trying again")
-            response = chat_complete(
-                conversation.history, function_registry=function_registry, model=model
-            )
+            response = chat_complete(conversation.history, function_registry=function_registry, model=model)
             message = response.json()["choices"][0]
             function_arguments = get_function_arguments(
                 message, conversation, function_registry=function_registry, model=model
@@ -77,7 +76,7 @@ def chat_complete_execute_fn(
     model: str,
 ):
     response = chat_complete(
-        conversation.history,
+        conversation=conversation,
         function_registry=function_registry,
         model=model,
         return_function_params=True,
@@ -91,7 +90,7 @@ def chat_complete_execute_fn(
     logger.debug(f"results: {results}")
     conversation.add_message(role="function", name=callable_function.__name__, content=str(results))
     response = chat_complete(
-        conversation.history,
+        conversation=conversation,
         function_registry=function_registry,
         model=model,
         return_function_params=False,
