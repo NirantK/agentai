@@ -1,4 +1,4 @@
-# AgentAI: Unleash the Power of OpenAI Agents
+# AgentAI: OpenAI Functions + Python Functions
 
 It is designed to make it easy to use OpenAI models e.g. GPT3.5-Turbo and GPT4 with existing Python functions by adding a simple decorator.
 
