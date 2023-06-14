@@ -20,7 +20,8 @@ def chat_complete(messages, model, functions=None, debug=False):
     if not len(messages) > 0:
         raise ValueError("messages must be a list of strings")
     json_data = {"model": model, "messages": messages}
-    if functions is not None:
+    if function_registry is not None:
+        functions = function_registry.get_all_functions()
         json_data.update({"functions": functions})
         if debug:
             print(f"functions: {functions}")
