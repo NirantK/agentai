@@ -7,7 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_completion_request(messages, model, functions=None, debug=False):
+def chat_complete(messages, model, functions=None, debug=False):
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + openai.api_key,
@@ -34,3 +34,33 @@ def chat_completion_request(messages, model, functions=None, debug=False):
         print("Unable to generate ChatCompletion response")
         print(f"Exception: {e}")
         return e
+
+
+def get_function_arguments(message, conversation, functions, model):
+    function_arguments = {}
+    if message["finish_reason"] == "function_call":
+        arguments = message["message"]["function_call"]["arguments"]
+        try:
+            function_arguments = eval(arguments)
+        except SyntaxError:
+            print("Syntax error, trying again")
+            response = chat_complete(conversation.conversation_history, functions=functions, model=model)
+            message = response.json()["choices"][0]
+            function_arguments = get_function_arguments(message)
+    else:
+        print("Function not required, responding to user")
+    return function_arguments
+
+
+def chat_complete_execute_fn(conversation, functions, model, callable_function):
+    response = chat_complete(conversation.conversation_history, functions=functions, model=model)
+    message = response.json()["choices"][0]
+    function_arguments = get_function_arguments(
+        message=message, conversation=conversation, functions=functions, model=model
+    )
+    results = callable_function(**function_arguments)
+    conversation.add_message(role="function", name=callable_function.__name__, content=str(results))
+    response = chat_complete(conversation.conversation_history, functions=functions, model=model)
+    assistant_message = response.json()["choices"][0]["message"]["content"]
+    conversation.add_message(role="assistant", content=assistant_message)
+    return assistant_message
