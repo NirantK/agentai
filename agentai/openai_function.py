@@ -1,5 +1,5 @@
 """
-This module contains the function parser, 
+This module contains the function parser,
 Uses docstring and type annotations to give a JSON format that can be used by the OpenAI API.
 """
 import enum
@@ -42,7 +42,7 @@ class ToolRegistry:
         """
         self.functions[func.__name__] = func
 
-    def get_function_info(self, func: Any) -> str:
+    def get_function_info(self, func: Callable) -> dict:
         signature = inspect.signature(func)
         docstring = inspect.getdoc(func)
         docstring_parsed = parse(docstring)
