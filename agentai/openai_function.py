@@ -1,5 +1,5 @@
 """
-This module contains the function parser, 
+This module contains the function parser,
 Uses docstring and type annotations to give a JSON format that can be used by the OpenAI API.
 """
 import enum
@@ -114,6 +114,9 @@ def docstring_parameters(**kwargs):
 
     return dec
 
+class Tool(Callable[..., Any]):
+    json_info: str
+
 
 def tool(registry: ToolRegistry, depends_on=None):
     if registry is None:
@@ -121,7 +124,7 @@ def tool(registry: ToolRegistry, depends_on=None):
     if not isinstance(registry, ToolRegistry):
         raise TypeError(f"The registry must be an instance of FunctionRegistry, got {registry} instead")
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(func: Callable[..., Any]) -> Tool:
         # Check if the function has dependencies
         if depends_on:
             # Check if the dependency is a function and get its name, else assume it's a string
