@@ -26,13 +26,6 @@ def to_json_schema_type(type_name: str) -> str:
     return type_map.get(type_name, "any")
 
 
-import enum
-import inspect
-from typing import Any
-
-from docstring_parser import parse
-
-
 def docstring_parameters(**kwargs):
     def dec(obj):
         obj.__doc__ = obj.__doc__.format(**kwargs)
