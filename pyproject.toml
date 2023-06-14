@@ -16,6 +16,9 @@ requests = "^2.31.0"
 tenacity = "^8.2.2"
 ruff = "^0.0.272"
 isort = "^5.12.0"
+pypdf2 = "^3.0.1"
+pandas = "^2.0.2"
+termcolor = "^2.3.0"
 
 
 [build-system]
