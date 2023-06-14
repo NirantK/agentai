@@ -45,6 +45,7 @@ from agentai.function_parser import function_info
 2. **Define a function with `@tool` decorator**
 
 ```python
+
 from enum import Enum
 class TemperatureUnit(Enum):
     celsius = "celsius"
@@ -65,6 +66,8 @@ def get_current_weather(location: str, format: TemperatureUnit) -> str:
     # Your function implementation goes here.
     return ""
 ```
+
+Note that `agentai` automatically parses the Python Enum type (TemperatureUnit) and passes it to the model as a JSONSchema Enum. This saves you time in writing boilerplate JSONSchema which is required by OpenAI API.
 
 3. **Create a Conversation object and add messages**
 
