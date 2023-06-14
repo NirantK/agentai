@@ -4,10 +4,11 @@ API functions for the agentai package
 import openai
 import requests
 from tenacity import retry, stop_after_attempt, wait_random_exponential
+from .openai_function import FunctionRegistry
 
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_complete(messages, model, functions=None, debug=False):
+def chat_complete(messages, model, function_registry: FunctionRegistry = None, debug: bool = False):
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
     headers = {

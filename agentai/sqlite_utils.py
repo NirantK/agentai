@@ -1,11 +1,25 @@
+from enum import Enum
 from functools import lru_cache
+
+
+class DatabaseType(Enum):
+    """An enum containing the different types of databases."""
+
+    SQLITE = "sqlite"
+    POSTGRESQL = "postgresql"
+    REDSHIFT = "redshift"
+    MYSQL = "mysql"
+    SNOWFLAKE = "snowflake"
+    BIGQUERY = "bigquery"
 
 
 class DBUtils:
     """A class containing utility functions for working with SQLite databases."""
 
-    def __init__(self, conn):
+    def __init__(self, conn, db_type: DatabaseType = DatabaseType.SQLITE):
         self.conn = conn
+        if db_type != DatabaseType.SQLITE:
+            raise NotImplementedError("Only SQLite databases are currently supported.")
 
     def get_table_names(self):
         """Return a list of table names."""
