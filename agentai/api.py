@@ -26,7 +26,7 @@ def chat_complete(messages, model, function_registry: FunctionRegistry = None, d
         raise ValueError("messages must be a list of strings")
     json_data = {"model": model, "messages": messages}
     if function_registry is not None:
-        functions = function_registry.get_all_functions()
+        functions = function_registry.get_all_function_information()
         json_data.update({"functions": functions})
         if debug:
             print(f"functions: {functions}")

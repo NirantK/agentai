@@ -4,7 +4,6 @@ Uses docstring and type annotations to give a JSON format that can be used by th
 """
 import enum
 import inspect
-import json
 import typing
 from typing import Any, Callable
 
@@ -78,7 +77,7 @@ class FunctionRegistry:
             "parameters": {"type": "object", "properties": parameters, "required": required},
         }
 
-        return json.dumps(function_info, indent=4)
+        return function_info
 
     def get_all_function_information(self):
         """
@@ -116,8 +115,17 @@ def docstring_parameters(**kwargs):
     return dec
 
 
-def tool(registry):
+def tool(registry, depends_on=None):
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        # Check if the function has dependencies
+        if depends_on:
+            # Check if the dependency is a function and get its name, else assume it's a string
+            dependency_name = depends_on.__name__ if callable(depends_on) else depends_on
+
+            # Check if the dependency exists in the registry
+            if dependency_name not in registry.functions:
+                raise ValueError(f"Dependency function '{dependency_name}' is not registered in the registry")
+
         func_info = registry.get_function_info(func)
         func.json_info = func_info
         registry.add(func)  # Register the function in the passed registry
