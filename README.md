@@ -88,7 +88,6 @@ conversation.add_message("user", "what is the weather like today?")
 
 ```python
 chat_response = chat_complete(conversation.conversation_history, function_registry=weather_registry, model=GPT_MODEL)
-
 ```
 
 Output:
@@ -120,7 +119,9 @@ Output:
 1. **Define a function with `@tool` decorator**
 
 ```python
-@tool
+db_registry = ToolRegistry()
+
+@tool(registry=db_registry)
 def ask_database(query: str) -> List[Tuple[str, str]]:
     """
     Use this function to answer user questions about music. Input should be a fully formed SQL query.
