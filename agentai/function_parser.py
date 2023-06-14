@@ -94,7 +94,7 @@ def get_function_info(func: Any) -> str:
     return json.dumps(function_info, indent=4)
 
 
-def function_info(func: Callable[..., Any]) -> Callable[..., Any]:
+def tool(func: Callable[..., Any]) -> Callable[..., Any]:
     func_info = get_function_info(func)
     func.json_info = func_info
     return func

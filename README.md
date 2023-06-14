@@ -1,4 +1,8 @@
-# AgentAI: Unleash the Power of Conversational AI
+# AgentAI: Unleash the Power of OpenAI Agents
+
+It is designed to make it easy to use OpenAI models e.g. GPT3.5-Turbo and GPT4 with existing Python functions by adding a simple decorator.
+
+interact with databases, and handle structured data types.
 
 AgentAI is a simple Python library with these ethos:
 
@@ -6,9 +10,7 @@ AgentAI is a simple Python library with these ethos:
 2. Do not invent a new syntax!
 3. Make it easy to integrate with existing projects!
 4. Make it easy to extend!
-5. Have fun and Use exclamations!
-
-It is designed to empower your OpenAI models e.g. GPT3.5-Turbo and GPT4 Functions with real-world functionality, allowing them to make API calls, execute defined functions, interact with databases, and handle structured data types.
+5. Have fun and use exclamations!
 
 Unlike Langchain, AgentAI does NOT require you to learn a new syntax. Instead, it allows you to define functions using Python decorators and then call them directly!
 This makes it easy to integrate AgentAI with your existing projects.
@@ -40,7 +42,7 @@ from agentai.conversation import Conversation
 from agentai.function_parser import function_info
 ```
 
-2. **Define a function with `@function_info` decorator**
+2. **Define a function with `@tool` decorator**
 
 ```python
 from enum import Enum
@@ -48,7 +50,7 @@ class TemperatureUnit(Enum):
     celsius = "celsius"
     fahrenheit = "fahrenheit"
 
-@function_info
+@tool
 def get_current_weather(location: str, format: TemperatureUnit) -> str:
     """
     Get the current weather
@@ -106,10 +108,10 @@ Output:
 
 ### Ramping up Usage: Implement function execution logic (e.g., a database query)
 
-1. **Define a function with `@function_info` decorator**
+1. **Define a function with `@tool` decorator**
 
 ```python
-@function_info
+@tool
 def ask_database(query: str) -> List[Tuple[str, str]]:
     """
     Use this function to answer user questions about music. Input should be a fully formed SQL query.
