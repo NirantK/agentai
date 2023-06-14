@@ -19,7 +19,7 @@ from .openai_function import ToolRegistry
 
 @retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(3))
 def chat_complete(
-    messages, model, function_registry: ToolRegistry = None, debug: bool = False, function_mode: bool = False
+    messages, model, function_registry: ToolRegistry = None, debug: bool = False, return_function: bool = False
 ):
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
@@ -44,7 +44,7 @@ def chat_complete(
         headers=headers,
         json=json_data,
     )
-    if function_mode:
+    if return_function:
         if response.json()["choices"][0]["message"]["content"] is not None:
             raise ValueError(f"OpenAI API returned unexpected output: {response.json()}")
         return response
