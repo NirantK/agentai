@@ -190,7 +190,7 @@ Check out our detailed [notebooks with examples](https://github.com/NirantK/agen
 
 ## Contributing
 
-We welcome contributions! Please see our [contributing guidelines](https://github.com/NirantK/agentai) for more details.
+We welcome contributions! Please see our [contributing guidelines](./.github/CONTRIBUTING.md) for more details.
 
 ## Support
 
