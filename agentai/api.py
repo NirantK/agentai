@@ -25,7 +25,7 @@ def chat_complete(
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
     if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
-        raise ValueError("messages must be a list of strings")
+        raise ValueError("Please provide a list of Message objects")
 
     headers = {
         "Content-Type": "application/json",
