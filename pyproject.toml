@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "agentai"
+version = "0.0.1"
+description = "Python library which wraps OpenAI Functions and makes them easier to use"
+authors = ["NirantK <nirant.bits@gmail.com>"]
+license = "Apache"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.9, 3.10"
+docstring-parser = "^0.15"
+openai = "^0.27.8"
+tiktoken = "^0.4.0"
+requests = "^2.31.0"
+tenacity = "^8.2.2"
+ruff = "^0.0.272"
+black = {extras = ["jupyter"], version = "^23.3.0"}
+isort = "^5.12.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
