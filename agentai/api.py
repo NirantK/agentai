@@ -5,14 +5,19 @@ from typing import Callable
 
 import openai
 import requests
-from tenacity import retry, stop_after_attempt, wait_random_exponential
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 from .conversation import Conversation
-from .openai_function import FunctionRegistry
+from .openai_function import ToolRegistry
 
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_complete(messages, model, function_registry: FunctionRegistry = None, debug: bool = False):
+def chat_complete(messages, model, function_registry: ToolRegistry = None, debug: bool = False):
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
     headers = {
@@ -44,7 +49,7 @@ def chat_complete(messages, model, function_registry: FunctionRegistry = None, d
         return e
 
 
-def get_function_arguments(message, conversation: Conversation, function_registry: FunctionRegistry, model: str):
+def get_function_arguments(message, conversation: Conversation, function_registry: ToolRegistry, model: str):
     function_arguments = {}
     if message["finish_reason"] == "function_call":
         arguments = message["message"]["function_call"]["arguments"]
@@ -64,10 +69,18 @@ def get_function_arguments(message, conversation: Conversation, function_registr
     return function_arguments
 
 
+@retry(retry=retry_if_exception_type(KeyError), wait=wait_random_exponential(min=5, max=40), stop=stop_after_attempt(3))
 def chat_complete_execute_fn(
-    conversation: Conversation, function_registry: FunctionRegistry, callable_function: Callable, model: str
+    conversation: Conversation,
+    function_registry: ToolRegistry,
+    callable_function: Callable,
+    model: str,
+    debug: bool = False,
 ):
-    response = chat_complete(conversation.conversation_history, function_registry=function_registry, model=model)
+    response = chat_complete(
+        conversation.conversation_history, function_registry=function_registry, model=model, debug=debug
+    )
+    print(response.json())
     message = response.json()["choices"][0]
     function_arguments = get_function_arguments(
         message=message, conversation=conversation, function_registry=function_registry, model=model

@@ -25,7 +25,7 @@ def parse_annotation(annotation):
         return to_json_schema_type(annotation.__name__)
 
 
-class FunctionRegistry:
+class ToolRegistry:
     """
     A registry for functions that can be called by the OpenAI API.
     """
@@ -115,7 +115,12 @@ def docstring_parameters(**kwargs):
     return dec
 
 
-def tool(registry, depends_on=None):
+def tool(registry: ToolRegistry, depends_on=None):
+    if registry is None:
+        raise ValueError("The registry cannot be None")
+    if not isinstance(registry, ToolRegistry):
+        raise TypeError(f"The registry must be an instance of FunctionRegistry, got {registry} instead")
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Check if the function has dependencies
         if depends_on:
