@@ -8,6 +8,8 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
 def chat_complete(messages, model, functions=None, debug=False):
+    if openai.api_key is None:
+        raise ValueError("Please set openai.api_key and try again")
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + openai.api_key,
