@@ -7,6 +7,7 @@ import openai
 import requests
 from tenacity import (
     retry,
+    retry_if_exception,
     retry_if_exception_type,
     stop_after_attempt,
     wait_random_exponential,
@@ -16,8 +17,10 @@ from .conversation import Conversation
 from .openai_function import ToolRegistry
 
 
-@retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_complete(messages, model, function_registry: ToolRegistry = None, debug: bool = False):
+@retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(3))
+def chat_complete(
+    messages, model, function_registry: ToolRegistry = None, debug: bool = False, function_mode: bool = False
+):
     if openai.api_key is None:
         raise ValueError("Please set openai.api_key and try again")
     headers = {
@@ -36,17 +39,20 @@ def chat_complete(messages, model, function_registry: ToolRegistry = None, debug
         if debug:
             print(f"functions: {functions}")
 
-    try:
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            json=json_data,
-        )
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers=headers,
+        json=json_data,
+    )
+    if function_mode:
+        if response.json()["choices"][0]["message"]["content"] is not None:
+            raise ValueError(f"OpenAI API returned unexpected output: {response.json()}")
         return response
-    except Exception as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
+    else:
+        content = response.json()["choices"][0]["message"]["content"]
+        if content is None:
+            raise ValueError(f"OpenAI API returned unexpected output: {response.json()}")
+        return response
 
 
 def get_function_arguments(message, conversation: Conversation, function_registry: ToolRegistry, model: str):
@@ -69,7 +75,7 @@ def get_function_arguments(message, conversation: Conversation, function_registr
     return function_arguments
 
 
-@retry(retry=retry_if_exception_type(KeyError), wait=wait_random_exponential(min=5, max=40), stop=stop_after_attempt(3))
+@retry(retry=retry_if_exception, wait=wait_random_exponential(min=5, max=40), stop=stop_after_attempt(3))
 def chat_complete_execute_fn(
     conversation: Conversation,
     function_registry: ToolRegistry,
