@@ -142,7 +142,7 @@ def ask_database(query: str) -> List[Tuple[str, str]]:
 2. **Registering the function and using it**
 
 ```python
-agentai_functions = [json.loads(func.json_info) for func in [ask_database]]
+agentai_functions = [json.loads(func.metadata) for func in [ask_database]]
 
 from agentai.api import chat_complete_execute_fn
 agent_system_message = """You are ChinookGPT, a helpful assistant who gets answers to user questions from the Chinook Music Database.

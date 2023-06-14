@@ -19,8 +19,8 @@ class InvalidInputError(Exception):
 
 @retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 def chat_complete(
-    messages: list[Message], model: str, function_registry: ToolRegistry = None, return_function_params: bool = False
-):
+    messages: list[Message], model: str, tool_registry: ToolRegistry = None, return_function_params: bool = False
+) -> requests.Response:
     if openai.api_key is None:
         raise InvalidInputError("Please set openai.api_key and try again")
     if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
@@ -31,8 +31,8 @@ def chat_complete(
         "Authorization": "Bearer " + openai.api_key,
     }
     json_data = {"model": model, "messages": messages}
-    if function_registry is not None:
-        functions = function_registry.get_all_function_information()
+    if tool_registry is not None:
+        functions = tool_registry.get_metadata()
         logger.debug(f"functions: {functions}")
         json_data.update({"functions": functions})
 
@@ -55,7 +55,7 @@ def chat_complete(
         return response
 
 
-def get_function_arguments(message, conversation: Conversation, function_registry: ToolRegistry, model: str):
+def get_function_arguments(message: dict, conversation: Conversation, function_registry: ToolRegistry, model: str):
     function_arguments = {}
     if message["finish_reason"] == "function_call":
         arguments = message["message"]["function_call"]["arguments"]
@@ -64,12 +64,12 @@ def get_function_arguments(message, conversation: Conversation, function_registr
         except SyntaxError:
             print("Syntax error, trying again")
             response = chat_complete(
-                conversation.history, function_registry=function_registry, model=model
+                conversation.history, tool_registry=function_registry, model=model
             )
             message = response.json()["choices"][0]
             function_arguments = get_function_arguments(
                 message, conversation, function_registry=function_registry, model=model
-            )
+            ) # FIXME: This can become an infinite loop
         return function_arguments
     raise ValueError(f"Unexpected message: {message}")
 
@@ -83,7 +83,7 @@ def chat_complete_execute_fn(
 ):
     response = chat_complete(
         conversation.history,
-        function_registry=function_registry,
+        tool_registry=function_registry,
         model=model,
         return_function_params=True,
     )
@@ -98,7 +98,7 @@ def chat_complete_execute_fn(
 
     response = chat_complete(
         conversation.history,
-        function_registry=function_registry,
+        tool_registry=function_registry,
         model=model,
         return_function_params=False,
     )
