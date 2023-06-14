@@ -28,16 +28,14 @@ def to_json_schema_type(type_name: str) -> str:
 def parse_annotation(annotation):
     if getattr(annotation, "__origin__", None) == typing.Union:
         types = [t.__name__ if t.__name__ != "NoneType" else "None" for t in annotation.__args__]
-        return to_json_schema_type("Optional"), to_json_schema_type(types[0])
+        return to_json_schema_type(types[0])
     elif getattr(annotation, "__origin__", None) is not None:
         if annotation._name is not None:
-            return to_json_schema_type(annotation._name), [to_json_schema_type(i.__name__) for i in annotation.__args__]
+            return f"{to_json_schema_type(annotation._name)}[{','.join([to_json_schema_type(i.__name__) for i in annotation.__args__])}]"
         else:
-            return to_json_schema_type(annotation.__origin__.__name__), [
-                to_json_schema_type(i.__name__) for i in annotation.__args__
-            ]
+            return f"{to_json_schema_type(annotation.__origin__.__name__)}[{','.join([to_json_schema_type(i.__name__) for i in annotation.__args__])}]"
     else:
-        return to_json_schema_type(annotation.__name__), None
+        return to_json_schema_type(annotation.__name__)
 
 
 def get_function_info(func: Any) -> str:
@@ -49,12 +47,9 @@ def get_function_info(func: Any) -> str:
     required = []
 
     for name, param in signature.parameters.items():
-        json_type, subtypes = parse_annotation(param.annotation)
+        json_type = parse_annotation(param.annotation)
 
         param_info = {"type": json_type, "description": ""}
-
-        if subtypes is not None and json_type == "array":
-            param_info["items"] = {"type": subtypes[0]}
 
         if param.default != inspect.Parameter.empty:
             if isinstance(param.default, str):
@@ -63,7 +58,7 @@ def get_function_info(func: Any) -> str:
                 param_info["default"] = str(param.default)
 
         # If the parameter type is not Optional and it's not 'self', it's required.
-        if not json_type == "any" and name != "self":
+        if not json_type.startswith("Optional") and name != "self":
             required.append(name)
 
         # Extract description from parsed docstring
@@ -76,8 +71,10 @@ def get_function_info(func: Any) -> str:
     function_info = {
         "name": func.__name__,
         "description": docstring_parsed.short_description,
-        "parameters": {"type": "object", "properties": parameters},
+        "parameters": {
+            "type": "object",
+            "properties": parameters,
+        },
         "required": required,
     }
-
     return json.dumps(function_info, indent=4)

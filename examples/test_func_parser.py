@@ -21,6 +21,7 @@ def get_articles(query: str, library: Optional[str], top_k: Optional[int] = 5) -
 
 def test_get_function_info():
     """Test get_function_info"""
+    print(get_function_info(get_articles))
     assert get_function_info(get_articles) == {
         "name": "get_articles",
         "description": "This function gets the top_k articles based on a user's query, sorted by relevance.",
@@ -37,4 +38,6 @@ def test_get_function_info():
         },
         "required": ["query"],
     }
-    print(get_function_info(get_articles))
+
+
+test_get_function_info()
