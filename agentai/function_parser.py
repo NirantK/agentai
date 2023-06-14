@@ -2,10 +2,10 @@
 This module contains the function parser, 
 uses docstring to give a JSON format that can be used by the OpenAI API.
 """
-import inspect
-import typing
-import json
 import enum
+import inspect
+import json
+import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
@@ -29,6 +29,7 @@ def to_json_schema_type(type_name: str) -> str:
 import enum
 import inspect
 from typing import Any
+
 from docstring_parser import parse
 
 
