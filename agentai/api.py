@@ -5,16 +5,13 @@ from typing import Callable
 
 import openai
 import requests
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-)
+from loguru import logger
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 from .conversation import Conversation
 from .openai_function import ToolRegistry
 
-from loguru import logger
+logger.disable(__name__)
 
 
 @retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(3))
