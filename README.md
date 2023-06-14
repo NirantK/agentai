@@ -6,13 +6,15 @@ interact with databases, and handle structured data types.
 
 AgentAI is a simple Python library with these ethos:
 
-1. Let developers write and read code!
+1. Let developers write code!
 2. Do not invent a new syntax!
 3. Make it easy to integrate with existing projects!
 4. Make it easy to extend!
 5. Have fun and use exclamations!
 
-Unlike Langchain, AgentAI does NOT require you to learn a new syntax. Instead, it allows you to define functions using Python decorators and then call them directly!
+Unlike some libraries, AgentAI does NOT require you to learn a new syntax. No chains!
+
+Instead, it empowers you to add OpenAI functions using Python decorators and then call them directly from your code.
 This makes it easy to integrate AgentAI with your existing projects.
 
 ## Features
@@ -39,7 +41,7 @@ pip install agentai
 ```python
 from agentai.api import chat_complete
 from agentai.conversation import Conversation
-from agentai.function_parser import function_info
+from agentai.function_parser import tool
 ```
 
 2. **Define a function with `@tool` decorator**
