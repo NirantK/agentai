@@ -6,7 +6,7 @@ from typing import Callable
 import openai
 import requests
 from loguru import logger
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, retry_unless_exception_type
+from tenacity import retry, stop_after_attempt, retry_unless_exception_type
 
 from .conversation import Conversation, Message
 from .openai_function import ToolRegistry
@@ -16,9 +16,8 @@ logger.disable(__name__)
 class InvalidInputError(Exception):
     pass
 
-retry_unless_invalid = retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 
-@retry_unless_invalid
+@retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 def chat_complete(
     messages: list[Message], model: str, function_registry: ToolRegistry = None, return_function_params: bool = False
 ):
@@ -48,11 +47,11 @@ def chat_complete(
         if message["finish_reason"] == "function_call":
             return response
         else:
-            raise Exception(f"Unexpected message: {message}")
+            raise ValueError(f"Unexpected message: {message}")
     else:
         content = response.json()["choices"][0]["message"]["content"]
         if content is None:
-            raise Exception(f"OpenAI API returned unexpected output: {response.json()}")
+            raise ValueError(f"OpenAI API returned unexpected output: {response.json()}")
         return response
 
 
@@ -72,10 +71,10 @@ def get_function_arguments(message, conversation: Conversation, function_registr
                 message, conversation, function_registry=function_registry, model=model
             )
         return function_arguments
-    raise Exception(f"Unexpected message: {message}")
+    raise ValueError(f"Unexpected message: {message}")
 
 
-@retry_unless_invalid
+@retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 def chat_complete_execute_fn(
     conversation: Conversation,
     function_registry: ToolRegistry,
