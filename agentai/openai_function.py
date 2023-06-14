@@ -42,7 +42,7 @@ class ToolRegistry:
         """
         self.functions[func.__name__] = func
 
-    def get_function_info(self, func: Any) -> str:
+    def get_function_info(self, func: Any) -> dict:
         signature = inspect.signature(func)
         docstring = inspect.getdoc(func)
         docstring_parsed = parse(docstring)
@@ -114,9 +114,6 @@ def docstring_parameters(**kwargs):
 
     return dec
 
-class Tool(Callable[..., Any]):
-    json_info: str
-
 
 def tool(registry: ToolRegistry, depends_on=None):
     if registry is None:
@@ -124,7 +121,7 @@ def tool(registry: ToolRegistry, depends_on=None):
     if not isinstance(registry, ToolRegistry):
         raise TypeError(f"The registry must be an instance of FunctionRegistry, got {registry} instead")
 
-    def decorator(func: Callable[..., Any]) -> Tool:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Check if the function has dependencies
         if depends_on:
             # Check if the dependency is a function and get its name, else assume it's a string

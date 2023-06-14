@@ -1,31 +1,31 @@
 """
 API functions for the agentai package
 """
-from typing import Callable, List
+from typing import Callable
 
 import openai
 import requests
 from loguru import logger
-from tenacity import retry, retry_if_exception_type, stop_after_attempt
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, retry_unless_exception_type
 
 from .conversation import Conversation, Message
 from .openai_function import ToolRegistry
 
 logger.disable(__name__)
 
-class InvalidOutput(Exception):
+class InvalidInputError(Exception):
     pass
 
-retry_on_exceptions = retry_if_exception_type((InvalidOutput, requests.HTTPError, KeyError))
+retry_unless_invalid = retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 
-@retry(retry=retry_on_exceptions, stop=stop_after_attempt(3))
+@retry_unless_invalid
 def chat_complete(
-    messages: List[Message], model: str, function_registry: ToolRegistry = None, return_function_params: bool = False
+    messages: list[Message], model: str, function_registry: ToolRegistry = None, return_function_params: bool = False
 ):
     if openai.api_key is None:
-        raise ValueError("Please set openai.api_key and try again")
+        raise InvalidInputError("Please set openai.api_key and try again")
     if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
-        raise ValueError("Please provide a list of Message objects")
+        raise InvalidInputError("Please provide a list of Message dictionaries")
 
     headers = {
         "Content-Type": "application/json",
@@ -48,11 +48,11 @@ def chat_complete(
         if message["finish_reason"] == "function_call":
             return response
         else:
-            raise InvalidOutput(f"Unexpected message: {message}")
+            raise Exception(f"Unexpected message: {message}")
     else:
         content = response.json()["choices"][0]["message"]["content"]
         if content is None:
-            raise InvalidOutput(f"OpenAI API returned unexpected output: {response.json()}")
+            raise Exception(f"OpenAI API returned unexpected output: {response.json()}")
         return response
 
 
@@ -72,10 +72,10 @@ def get_function_arguments(message, conversation: Conversation, function_registr
                 message, conversation, function_registry=function_registry, model=model
             )
         return function_arguments
-    raise InvalidOutput(f"Unexpected message: {message}")
+    raise Exception(f"Unexpected message: {message}")
 
 
-@retry(retry=retry_on_exceptions, stop=stop_after_attempt(3))
+@retry_unless_invalid
 def chat_complete_execute_fn(
     conversation: Conversation,
     function_registry: ToolRegistry,
