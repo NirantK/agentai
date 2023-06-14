@@ -1,8 +1,10 @@
 from typing import List, Dict, Optional
 from agentai.function_parser import get_function_info
 
+paper_dir_filepath = "examples/paper_dir"
 
-def get_articles(query: str, library: Optional[str], top_k: Optional[int] = 5) -> List[Dict[str, str]]:
+
+def get_articles(query: str, library: str = paper_dir_filepath, top_k: Optional[int] = 5) -> List[Dict[str, str]]:
     """
     This function gets the top_k articles based on a user's query, sorted by relevance.
     It also downloads the files and stores them in arxiv_library.csv to be retrieved by the read_article_and_summarize.
@@ -29,11 +31,11 @@ def test_get_function_info():
             "type": "object",
             "properties": {
                 "query": {
-                    "type": "str",
+                    "type": "string",
                     "description": "User query in JSON. Responses should be summarized and should include the article URL reference",
                 },
-                "library": {"type": "Optional[str]", "description": "filepath. Defaults to paper_dir_filepath."},
-                "top_k": {"type": "Optional[int]", "description": "Number of papers. Defaults to 5.", "default": "5"},
+                "library": {"type": "string", "description": "filepath. Defaults to paper_dir_filepath."},
+                "top_k": {"type": "integer", "description": "Number of papers. Defaults to 5."},
             },
         },
         "required": ["query"],

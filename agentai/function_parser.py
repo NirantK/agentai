@@ -51,14 +51,14 @@ def get_function_info(func: Any) -> str:
 
         param_info = {"type": json_type, "description": ""}
 
-        if param.default != inspect.Parameter.empty:
-            if isinstance(param.default, str):
-                param_info["default"] = param.default
-            else:
-                param_info["default"] = str(param.default)
+        # if param.default != inspect.Parameter.empty:
+        #     if isinstance(param.default, str):
+        #         param_info["default"] = param.default
+        #     else:
+        #         param_info["default"] = str(param.default)
 
-        # If the parameter type is not Optional and it's not 'self', it's required.
-        if not json_type.startswith("Optional") and name != "self":
+        # If the parameter type is not "any", it's not 'self', and it has no default value, it's required.
+        if json_type != "any" and name != "self" and param.default == inspect.Parameter.empty:
             required.append(name)
 
         # Extract description from parsed docstring
