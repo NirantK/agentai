@@ -24,6 +24,13 @@ This makes it easy to integrate AgentAI with your existing projects.
 - **Function Execution**: Generate and execute function calls based on conversation context.
 - **Conversation Management**: Effectively manage and track the state of conversations. Easily define your own functions which can use messages, functions, and conversation history.
 
+### Next Week
+
+- _Multiple Functions_: Call multiple functions in a single conversation with a DSL/DAG.
+- _Retrieval_: Use AgentAI to retrieve information from a vector Database -- but only when needed!
+- _Rich Media_: Support for rich media types e.g. images, audio
+- _Function Generation_: Generate Python functions based on conversation context
+
 ## Installation
 
 Install AgentAI using pip:
