@@ -31,7 +31,7 @@ class Conversation:
         for message in self.history:
             print(
                 colored(
-                    f"{message['role']}: {message['content']}\n\n",
-                    self.role_to_color[message["role"]],
+                    f"{message.role}: {message.content}\n\n",
+                    self.role_to_color[message.role],
                 )
             )
