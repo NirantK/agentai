@@ -4,10 +4,12 @@ Uses docstring and type annotations to give a JSON format that can be used by th
 """
 import enum
 import inspect
+import json
 import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
+from openai import ChatCompletion
 from pydantic import validate_arguments
 
 
@@ -29,6 +31,18 @@ def parse_annotation(annotation):
             return f"{to_json_schema_type(annotation.__origin__.__name__)}[{','.join([to_json_schema_type(i.__name__) for i in annotation.__args__])}]"
     else:
         return to_json_schema_type(annotation.__name__)
+
+
+def ai_execute(self, name: str, completion: ChatCompletion) -> Any:
+    """
+    Execute a function by name with the given completion.
+    """
+    func = self.functions[name]
+    function_arguments = json.loads(
+        completion.choices[0].message["function_call"]["arguments"]
+    )
+    func.validate(**function_arguments)
+    return func(**function_arguments)
 
 
 class ToolRegistry:
@@ -134,31 +148,34 @@ def docstring_parameters(**kwargs):
     return dec
 
 
-def tool(registry: ToolRegistry, depends_on=None):
-    if registry is None:
-        raise ValueError("The registry cannot be None")
-    if not isinstance(registry, ToolRegistry):
-        raise TypeError(
-            f"The registry must be an instance of ToolRegistry, got {registry} with type: {type(registry)} instead"
-        )
+class tool:
+    def __init__(self, registry: ToolRegistry, depends_on=None):
+        if registry is None:
+            raise ValueError("The registry cannot be None")
+        if not isinstance(registry, ToolRegistry):
+            raise TypeError(
+                f"The registry must be an instance of ToolRegistry, got {registry} with type: {type(registry)} instead"
+            )
+        self.registry = registry
+        self.depends_on = depends_on
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         # Check if the function has dependencies
-        if depends_on:
+        if self.depends_on:
             # Check if the dependency is a function and get its name, else assume it's a string
             dependency_name = (
-                depends_on.__name__ if callable(depends_on) else depends_on
+                self.depends_on.__name__
+                if callable(self.depends_on)
+                else self.depends_on
             )
 
             # Check if the dependency exists in the registry
-            if dependency_name not in registry.functions:
+            if dependency_name not in self.registry.functions:
                 raise ValueError(
                     f"Dependency function '{dependency_name}' is not registered in the registry"
                 )
 
-        func_info = registry.function_schema(func)
+        func_info = self.registry.function_schema(func)
         func.json_info = func_info
-        registry.add(func)  # Register the function in the passed registry
+        self.registry.add(func)  # Register the function in the passed registry
         return func
-
-    return decorator
