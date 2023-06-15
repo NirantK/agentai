@@ -27,7 +27,7 @@ class Conversation:
 
         self.history.append(Message(**message))
 
-    def display_conversation(self, detailed: bool = False):
+    def display_conversation(self):
         for message in self.history:
             print(
                 colored(
