@@ -48,7 +48,7 @@ from agentai.api import chat_complete, chat_complete_execute_fn
 from agentai.openai_function import tool, ToolRegistry
 from agentai.conversation import Conversation
 from enum import Enum
-weather_registry = ToolRegistry()
+tool_registry = ToolRegistry()
 ```
 
 2. **Define a function with `@tool` decorator**
@@ -59,7 +59,7 @@ class TemperatureUnit(Enum):
     fahrenheit = "fahrenheit"
 
 
-@tool(regsitry=weather_registry)
+@tool(regsitry=tool_registry)
 def get_current_weather(location: str, format: TemperatureUnit) -> str:
     """
     Get the current weather
@@ -87,7 +87,7 @@ conversation.add_message("user", "what is the weather like today?")
 4. **Use the `chat_complete` function to get a response from the model**
 
 ```python
-chat_response = chat_complete(conversation.conversation_history, function_registry=weather_registry, model=GPT_MODEL)
+chat_response = chat_complete(conversation.conversation_history, tool_registry=tool_registry, model=GPT_MODEL)
 ```
 
 Output:
@@ -103,7 +103,7 @@ Once the user provides the required information, the model can generate the func
 
 ```python
 conversation.add_message("user", "I'm in Bengaluru, India")
-chat_response = chat_complete(conversation.conversation_history, function_registry=weather_registry, model=GPT_MODEL)
+chat_response = chat_complete(conversation.conversation_history, tool_registry=tool_registry, model=GPT_MODEL)
 
 eval(chat_response.json()["choices"][0]["message"]["function_call"]["arguments"])
 ```
@@ -142,7 +142,7 @@ def ask_database(query: str) -> List[Tuple[str, str]]:
 2. **Registering the function and using it**
 
 ```python
-agentai_functions = [json.loads(func.json_info) for func in [ask_database]]
+agentai_functions = [json.loads(func.metadata) for func in [ask_database]]
 
 from agentai.api import chat_complete_execute_fn
 agent_system_message = """You are ChinookGPT, a helpful assistant who gets answers to user questions from the Chinook Music Database.
