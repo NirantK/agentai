@@ -21,8 +21,8 @@ class InvalidInputError(Exception):
 def chat_complete(
     conversation: Conversation, model, tool_registry: ToolRegistry = None, return_function_params: bool = False
 ):
-    messages = conversation.history
-    if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
+    messages = [message.dict(exclude_unset=True) for message in conversation.history]
+    if not isinstance(messages, list) or len(messages) == 0:
         raise InvalidInputError("Please provide a non-empty list of Message dictionaries")
 
     functions = tool_registry.get_all_function_information() if tool_registry is not None else []
