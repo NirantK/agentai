@@ -13,11 +13,7 @@ from .openai_function import ToolRegistry
 logger.disable(__name__)
 
 
-class InvalidInputError(Exception):
-    pass
-
-
-@retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
+@retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(5))
 def chat_complete(
     conversation: Conversation, model, tool_registry: ToolRegistry = None, return_function_params: bool = False
 ):
@@ -33,17 +29,22 @@ def chat_complete(
         functions=functions,
     )
 
+    message = response.choices[0]["message"]
+    logger.info(f"OpenAI API returned: {message}")
+    # When function params are expected
     if return_function_params:
         message = response.choices[0]
         if message["finish_reason"] == "function_call":
+            logger.info(f"Got Function Call: {message}")
             return response
-        else:
-            raise ValueError(f"Unexpected message: {message}")
-    else:
-        content = response.choices[0]["message"]["content"]
-        if content is None:
-            raise ValueError(f"OpenAI API returned unexpected output: {response}")
+        raise ValueError(f"Expected function parameters, but received: {message}")
+
+    # When a message is expected
+    if message["content"] is not None:
+        logger.info(f"Got Message: {message}")
         return response
+
+    raise ValueError(f"Expected a message, but received function parameters: {message}")
 
 
 def get_function_arguments(message, conversation: Conversation, tool_registry: ToolRegistry, model: str):
