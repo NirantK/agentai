@@ -22,7 +22,7 @@ class Conversation:
 
     def add_message(self, role: str, content: str, name: Optional[str] = None):
         message = {"role": role, "content": content}
-        if name:
+        if name is not None:
             message["name"] = name
 
         self.history.append(Message(**message))

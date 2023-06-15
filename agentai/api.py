@@ -5,9 +5,14 @@ from typing import Callable
 
 from loguru import logger
 from openai import ChatCompletion
-from tenacity import retry, retry_unless_exception_type, stop_after_attempt
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    retry_if_exception_type,
+    wait_exponential,
+)
 
-from .conversation import Conversation, Message
+from .conversation import Conversation
 from .openai_function import ToolRegistry
 
 logger.disable(__name__)
@@ -15,13 +20,20 @@ logger.disable(__name__)
 
 @retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(5))
 def chat_complete(
-    conversation: Conversation, model, tool_registry: ToolRegistry = None, return_function_params: bool = False
+    conversation: Conversation,
+    model,
+    tool_registry: ToolRegistry = None,
+    return_function_params: bool = False,
 ):
     messages = [message.dict(exclude_unset=True) for message in conversation.history]
-    if not isinstance(messages, list) or len(messages) == 0:
-        raise InvalidInputError("Please provide a non-empty list of Message dictionaries")
+    if len(messages) == 0:
+        raise UserWarning("Conversation history is empty")
 
-    functions = tool_registry.get_all_function_information() if tool_registry is not None else []
+    functions = (
+        tool_registry.get_all_function_information()
+        if tool_registry is not None
+        else []
+    )
 
     response = ChatCompletion.create(
         model=model,
@@ -33,21 +45,25 @@ def chat_complete(
     logger.info(f"OpenAI API returned: {message}")
     # When function params are expected
     if return_function_params:
-        message = response.choices[0]
-        if message["finish_reason"] == "function_call":
-            logger.info(f"Got Function Call: {message}")
+        finish_reason = response.choices[0].get("finish_reason", None)
+        if finish_reason is not None and finish_reason == "function_call":
+            logger.info(f"Got Function Call: {response}")
             return response
-        raise ValueError(f"Expected function parameters, but received: {message}")
+        raise ValueError(f"Expected function parameters, but received: {response}")
 
     # When a message is expected
     if message["content"] is not None:
-        logger.info(f"Got Message: {message}")
+        logger.info(f"Got Message: {response}")
         return response
 
-    raise ValueError(f"Expected a message, but received function parameters: {message}")
+    raise ValueError(
+        f"Expected a message, but received function parameters: {response}"
+    )
 
 
-def get_function_arguments(message, conversation: Conversation, tool_registry: ToolRegistry, model: str):
+def get_function_arguments(
+    message, conversation: Conversation, tool_registry: ToolRegistry, model: str
+):
     function_arguments = {}
     if message["finish_reason"] == "function_call":
         arguments = message["message"]["function_call"]["arguments"]
@@ -55,14 +71,18 @@ def get_function_arguments(message, conversation: Conversation, tool_registry: T
             function_arguments = eval(arguments)
         except SyntaxError:
             print("Syntax error, trying again")
-            response = chat_complete(conversation.history, tool_registry=tool_registry, model=model)
+            response = chat_complete(
+                conversation.history, tool_registry=tool_registry, model=model
+            )
             message = response.json()["choices"][0]
-            function_arguments = get_function_arguments(message, conversation, tool_registry=tool_registry, model=model)
+            function_arguments = get_function_arguments(
+                message, conversation, tool_registry=tool_registry, model=model
+            )
         return function_arguments
     raise ValueError(f"Unexpected message: {message}")
 
 
-@retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def chat_complete_execute_fn(
     conversation: Conversation,
     tool_registry: ToolRegistry,
@@ -77,12 +97,17 @@ def chat_complete_execute_fn(
     )
     message = response.json()["choices"][0]
     function_arguments = get_function_arguments(
-        message=message, conversation=conversation, tool_registry=tool_registry, model=model
+        message=message,
+        conversation=conversation,
+        tool_registry=tool_registry,
+        model=model,
     )
     logger.debug(f"function_arguments: {function_arguments}")
     results = callable_function(**function_arguments)
     logger.debug(f"results: {results}")
-    conversation.add_message(role="function", name=callable_function.__name__, content=str(results))
+    conversation.add_message(
+        role="function", name=callable_function.__name__, content=str(results)
+    )
 
     response = chat_complete(
         conversation=conversation,
