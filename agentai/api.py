@@ -2,17 +2,11 @@
 API functions for the agentai package
 """
 import json
+from typing import Any, Callable, Tuple
 
 from loguru import logger
 from openai import ChatCompletion
-from pydantic import validate_arguments
-from tenacity import (
-    retry,
-    retry_if_exception,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_random,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
 from .conversation import Conversation
 from .openai_function import ToolRegistry
@@ -67,7 +61,7 @@ def chat_complete(
 
 
 @retry(
-    retry=retry_if_exception,
+    retry=retry_if_exception_type(ValueError),
     stop=stop_after_attempt(3),
     wait=wait_random(min=1, max=10),
     # wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -76,7 +70,18 @@ def chat_complete_execute_fn(
     conversation: Conversation,
     tool_registry: ToolRegistry,
     model: str,
-):
+) -> Tuple[Any, Callable]:
+    """
+    Generate Argument and Execute a function from the Registry by the OpenAI API
+
+    Args:
+        conversation (Conversation): _description_
+        tool_registry (ToolRegistry): _description_
+        model (str): _description_
+
+    Returns:
+        Tuple[Any, Callable]: Results, Callable Function
+    """
     completion = chat_complete(
         conversation=conversation,
         tool_registry=tool_registry,
@@ -93,17 +98,4 @@ def chat_complete_execute_fn(
     logger.info("Validated function arguments")
     results = callable_function(**function_arguments)
     logger.info(f"results: {results}")
-    conversation.add_message(
-        role="function", name=callable_function.__name__, content=str(results)
-    )
-
-    completion = chat_complete(
-        conversation=conversation,
-        tool_registry=tool_registry,
-        model=model,
-        return_function_params=False,
-    )
-    assistant_message = completion.choices[0].message["content"]
-    logger.debug(f"assistant_message: {assistant_message}")
-    conversation.add_message(role="assistant", content=assistant_message)
-    return assistant_message
+    return results, callable_function
