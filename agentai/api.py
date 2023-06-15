@@ -6,7 +6,6 @@ from typing import Any, Callable, Tuple
 
 from loguru import logger
 from openai import ChatCompletion
-from sqlite3 import OperationalError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
 from .conversation import Conversation
@@ -16,7 +15,7 @@ logger.disable(__name__)
 
 
 @retry(
-    retry=retry_if_exception_type((ValueError, OperationalError)),
+    retry=retry_if_exception_type(ValueError),
     stop=stop_after_attempt(5),
 )
 def chat_complete(
@@ -67,7 +66,7 @@ def chat_complete(
 @retry(
     retry=retry_if_exception_type(ValueError),
     stop=stop_after_attempt(3),
-    wait=wait_random(min=1, max=10),
+    wait=wait_random(min=1, max=3),
     # wait=wait_exponential(multiplier=1, min=4, max=10),
 )
 def chat_complete_execute_fn(
@@ -102,4 +101,4 @@ def chat_complete_execute_fn(
     logger.info("Validated function arguments")
     results = callable_function(**function_arguments)
     logger.info(f"results: {results}")
-    return results, callable_function
+    return results, function_arguments, callable_function
