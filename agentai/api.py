@@ -35,6 +35,9 @@ def chat_complete(
         else []
     )
 
+    if len(functions) == 0 and return_function_params:
+        raise UserWarning("No functions registered but expecting function parameters")
+
     response = ChatCompletion.create(
         model=model,
         messages=messages,
