@@ -88,7 +88,6 @@ def chat_complete_execute_fn(
     function_arguments = json.loads(function_call["arguments"])
     logger.info(f"function_arguments: {function_arguments}")
     callable_function = tool_registry.get(function_call["name"])
-    callable_function.validate = validate_arguments(callable_function)
     logger.info(f"callable_function: {callable_function}")
     callable_function.validate(**function_arguments)
     logger.info("Validated function arguments")
