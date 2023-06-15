@@ -3,9 +3,8 @@ API functions for the agentai package
 """
 from typing import Callable
 
-import openai
-import requests
 from loguru import logger
+from openai import ChatCompletion
 from tenacity import retry, retry_unless_exception_type, stop_after_attempt
 
 from .conversation import Conversation, Message
@@ -23,8 +22,6 @@ def chat_complete(
     conversation: Conversation, model, tool_registry: ToolRegistry = None, return_function_params: bool = False
 ):
     messages = conversation.history
-    if openai.api_key is None:
-        raise InvalidInputError("Please set openai.api_key and try again")
     if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
         raise InvalidInputError("Please provide a non-empty list of Message dictionaries")
 
@@ -49,7 +46,7 @@ def chat_complete(
         return response
 
 
-def get_function_arguments(message, conversation: Conversation, function_registry: ToolRegistry, model: str):
+def get_function_arguments(message, conversation: Conversation, tool_registry: ToolRegistry, model: str):
     function_arguments = {}
     if message["finish_reason"] == "function_call":
         arguments = message["message"]["function_call"]["arguments"]
@@ -57,11 +54,9 @@ def get_function_arguments(message, conversation: Conversation, function_registr
             function_arguments = eval(arguments)
         except SyntaxError:
             print("Syntax error, trying again")
-            response = chat_complete(conversation.history, function_registry=function_registry, model=model)
+            response = chat_complete(conversation.history, tool_registry=tool_registry, model=model)
             message = response.json()["choices"][0]
-            function_arguments = get_function_arguments(
-                message, conversation, function_registry=function_registry, model=model
-            )
+            function_arguments = get_function_arguments(message, conversation, tool_registry=tool_registry, model=model)
         return function_arguments
     raise ValueError(f"Unexpected message: {message}")
 
@@ -69,19 +64,19 @@ def get_function_arguments(message, conversation: Conversation, function_registr
 @retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 def chat_complete_execute_fn(
     conversation: Conversation,
-    function_registry: ToolRegistry,
+    tool_registry: ToolRegistry,
     callable_function: Callable,
     model: str,
 ):
     response = chat_complete(
         conversation=conversation,
-        function_registry=function_registry,
+        tool_registry=tool_registry,
         model=model,
         return_function_params=True,
     )
     message = response.json()["choices"][0]
     function_arguments = get_function_arguments(
-        message=message, conversation=conversation, function_registry=function_registry, model=model
+        message=message, conversation=conversation, tool_registry=tool_registry, model=model
     )
     logger.debug(f"function_arguments: {function_arguments}")
     results = callable_function(**function_arguments)
@@ -90,7 +85,7 @@ def chat_complete_execute_fn(
 
     response = chat_complete(
         conversation=conversation,
-        function_registry=function_registry,
+        tool_registry=tool_registry,
         model=model,
         return_function_params=False,
     )
