@@ -1,21 +1,23 @@
 """
 API functions for the agentai package
 """
-from typing import Callable
+import json
 
 from loguru import logger
 from openai import ChatCompletion
+from pydantic import validate_arguments
 from tenacity import (
     retry,
-    stop_after_attempt,
+    retry_if_exception,
     retry_if_exception_type,
-    wait_exponential,
+    stop_after_attempt,
+    wait_random,
 )
 
 from .conversation import Conversation
 from .openai_function import ToolRegistry
 
-logger.disable(__name__)
+# logger.disable(__name__)
 
 
 @retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(5))
@@ -38,87 +40,71 @@ def chat_complete(
     if len(functions) == 0 and return_function_params:
         raise UserWarning("No functions registered but expecting function parameters")
 
-    response = ChatCompletion.create(
+    completion = ChatCompletion.create(
         model=model,
         messages=messages,
         functions=functions,
     )
 
-    message = response.choices[0]["message"]
+    message = completion.choices[0].message
     logger.info(f"OpenAI API returned: {message}")
     # When function params are expected
     if return_function_params:
-        finish_reason = response.choices[0].get("finish_reason", None)
+        finish_reason = completion.choices[0].get("finish_reason", None)
         if finish_reason is not None and finish_reason == "function_call":
-            logger.info(f"Got Function Call: {response}")
-            return response
-        raise ValueError(f"Expected function parameters, but received: {response}")
+            logger.info(f"Got Function Call: {completion}")
+            return completion
+        raise ValueError(f"Expected function parameters, but received: {completion}")
 
     # When a message is expected
     if message["content"] is not None:
-        logger.info(f"Got Message: {response}")
-        return response
+        logger.info(f"Got Message: {completion}")
+        return completion
 
     raise ValueError(
-        f"Expected a message, but received function parameters: {response}"
+        f"Expected a message, but received function parameters: {completion}"
     )
 
 
-def get_function_arguments(
-    message, conversation: Conversation, tool_registry: ToolRegistry, model: str
-):
-    function_arguments = {}
-    if message["finish_reason"] == "function_call":
-        arguments = message["message"]["function_call"]["arguments"]
-        try:
-            function_arguments = eval(arguments)
-        except SyntaxError:
-            print("Syntax error, trying again")
-            response = chat_complete(
-                conversation.history, tool_registry=tool_registry, model=model
-            )
-            message = response.json()["choices"][0]
-            function_arguments = get_function_arguments(
-                message, conversation, tool_registry=tool_registry, model=model
-            )
-        return function_arguments
-    raise ValueError(f"Unexpected message: {message}")
-
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+@retry(
+    retry=retry_if_exception,
+    stop=stop_after_attempt(3),
+    wait=wait_random(min=1, max=10),
+    # wait=wait_exponential(multiplier=1, min=4, max=10),
+)
 def chat_complete_execute_fn(
     conversation: Conversation,
     tool_registry: ToolRegistry,
-    callable_function: Callable,
     model: str,
 ):
-    response = chat_complete(
+    completion = chat_complete(
         conversation=conversation,
         tool_registry=tool_registry,
         model=model,
         return_function_params=True,
     )
-    message = response.json()["choices"][0]
-    function_arguments = get_function_arguments(
-        message=message,
-        conversation=conversation,
-        tool_registry=tool_registry,
-        model=model,
-    )
-    logger.debug(f"function_arguments: {function_arguments}")
+    message = completion.choices[0].message
+    function_call = message["function_call"]
+    function_arguments = json.loads(function_call["arguments"])
+    logger.info(f"function_arguments: {function_arguments}")
+    callable_function = tool_registry.get(function_call["name"])
+    callable_function.validate = validate_arguments(callable_function)
+    logger.info(f"callable_function: {callable_function}")
+    callable_function.validate(**function_arguments)
+    logger.info("Validated function arguments")
     results = callable_function(**function_arguments)
-    logger.debug(f"results: {results}")
+    logger.info(f"results: {results}")
     conversation.add_message(
         role="function", name=callable_function.__name__, content=str(results)
     )
 
-    response = chat_complete(
+    completion = chat_complete(
         conversation=conversation,
         tool_registry=tool_registry,
         model=model,
         return_function_params=False,
     )
-    assistant_message = response.json()["choices"][0]["message"]["content"]
+    assistant_message = completion.choices[0].message["content"]
     logger.debug(f"assistant_message: {assistant_message}")
     conversation.add_message(role="assistant", content=assistant_message)
     return assistant_message
