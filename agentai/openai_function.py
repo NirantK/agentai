@@ -8,6 +8,7 @@ import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
+from pydantic import validate_arguments
 
 
 def parse_annotation(annotation):
@@ -45,9 +46,10 @@ class ToolRegistry:
         """
         Register a function to the registry.
         """
+        func.validate = validate_arguments(func)
         self.functions[func.__name__] = func
 
-    def get_function_info(self, func: Callable) -> dict:
+    def function_schema(self, func: Callable) -> dict:
         signature = inspect.signature(func)
         docstring = inspect.getdoc(func)
         docstring_parsed = parse(docstring)
@@ -100,7 +102,7 @@ class ToolRegistry:
         """
         Get all function information from the registry.
         """
-        return [self.get_function_info(func) for func in self.functions.values()]
+        return [self.function_schema(func) for func in self.functions.values()]
 
     def get(self, name: str) -> Callable[..., Any]:
         """
@@ -137,7 +139,7 @@ def tool(registry: ToolRegistry, depends_on=None):
         raise ValueError("The registry cannot be None")
     if not isinstance(registry, ToolRegistry):
         raise TypeError(
-            f"The registry must be an instance of FunctionRegistry, got {registry} instead"
+            f"The registry must be an instance of ToolRegistry, got {registry} with type: {type(registry)} instead"
         )
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -154,7 +156,7 @@ def tool(registry: ToolRegistry, depends_on=None):
                     f"Dependency function '{dependency_name}' is not registered in the registry"
                 )
 
-        func_info = registry.get_function_info(func)
+        func_info = registry.function_schema(func)
         func.json_info = func_info
         registry.add(func)  # Register the function in the passed registry
         return func
