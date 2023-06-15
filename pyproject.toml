@@ -20,6 +20,7 @@ pandas = "^2.0.2"
 termcolor = "^2.3.0"
 typing-extensions = "^4.6.3"
 loguru = "^0.7.0"
+pydantic = "^1.10.9"
 
 
 [build-system]
