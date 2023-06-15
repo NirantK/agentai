@@ -1,9 +1,10 @@
-from typing import List, Optional, TypedDict
+from typing import List, Optional
 
+from pydantic import BaseModel
 from termcolor import colored
 
 
-class Message(TypedDict):
+class Message(BaseModel):
     role: str
     content: str
     name: Optional[str]
@@ -24,7 +25,7 @@ class Conversation:
         if name:
             message["name"] = name
 
-        self.history.append(message)
+        self.history.append(Message(**message))
 
     def display_conversation(self, detailed: bool = False):
         for message in self.history:
