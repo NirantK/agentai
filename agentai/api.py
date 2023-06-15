@@ -6,15 +6,19 @@ from typing import Any, Callable, Tuple
 
 from loguru import logger
 from openai import ChatCompletion
+from sqlite3 import OperationalError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
 from .conversation import Conversation
 from .openai_function import ToolRegistry
 
-# logger.disable(__name__)
+logger.disable(__name__)
 
 
-@retry(retry=retry_if_exception_type(ValueError), stop=stop_after_attempt(5))
+@retry(
+    retry=retry_if_exception_type((ValueError, OperationalError)),
+    stop=stop_after_attempt(5),
+)
 def chat_complete(
     conversation: Conversation,
     model,
