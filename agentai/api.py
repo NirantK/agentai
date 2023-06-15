@@ -20,40 +20,32 @@ class InvalidInputError(Exception):
 
 @retry(retry=retry_unless_exception_type(InvalidInputError), stop=stop_after_attempt(3))
 def chat_complete(
-    conversation: Conversation, model, function_registry: ToolRegistry = None, return_function_params: bool = False
+    conversation: Conversation, model, tool_registry: ToolRegistry = None, return_function_params: bool = False
 ):
     messages = conversation.history
     if openai.api_key is None:
         raise InvalidInputError("Please set openai.api_key and try again")
     if not isinstance(messages, list) or len(messages) == 0 or not isinstance(messages[0], Message):
-        raise InvalidInputError("Please provide a list of Message dictionaries")
+        raise InvalidInputError("Please provide a non-empty list of Message dictionaries")
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + openai.api_key,
-    }
-    json_data = {"model": model, "messages": messages}
-    if function_registry is not None:
-        functions = function_registry.get_all_function_information()
-        logger.debug(f"functions: {functions}")
-        json_data.update({"functions": functions})
+    functions = tool_registry.get_all_function_information() if tool_registry is not None else []
 
-    response = requests.post(
-        "https://api.openai.com/v1/chat/completions",
-        headers=headers,
-        json=json_data,
+    response = ChatCompletion.create(
+        model=model,
+        messages=messages,
+        functions=functions,
     )
-    response.raise_for_status()
+
     if return_function_params:
-        message = response.json()["choices"][0]
+        message = response.choices[0]
         if message["finish_reason"] == "function_call":
             return response
         else:
             raise ValueError(f"Unexpected message: {message}")
     else:
-        content = response.json()["choices"][0]["message"]["content"]
+        content = response.choices[0]["message"]["content"]
         if content is None:
-            raise ValueError(f"OpenAI API returned unexpected output: {response.json()}")
+            raise ValueError(f"OpenAI API returned unexpected output: {response}")
         return response
 
 
