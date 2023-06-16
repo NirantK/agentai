@@ -9,7 +9,7 @@ from openai import ChatCompletion
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
 from .conversation import Conversation
-from .openai_function import ToolRegistry
+from .tool_registry import ToolRegistry
 
 logger.disable(__name__)
 
@@ -20,7 +20,7 @@ logger.disable(__name__)
 )
 def chat_complete(
     conversation: Conversation,
-    model,
+    model: str,
     tool_registry: ToolRegistry = None,
     return_function_params: bool = False,
 ):
