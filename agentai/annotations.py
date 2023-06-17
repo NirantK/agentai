@@ -49,8 +49,7 @@ class tool:
                     f"Dependency function '{dependency_name}' is not registered in the registry"
                 )
 
-        func_info = self.registry.function_schema(func)
-        func.json_info = func_info
+        func._schema = self.registry.function_schema(func)
         self.registry.add(func)  # Register the function in the passed registry
         return func
 
