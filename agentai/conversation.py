@@ -21,11 +21,11 @@ class Conversation:
         }
 
     def add_message(self, role: str, content: str, name: Optional[str] = None):
-        message = {"role": role, "content": content}
+        message_dict = {"role": role, "content": content}
         if name is not None:
-            message["name"] = name
-
-        self.history.append(Message(**message))
+            message_dict["name"] = name
+        message = Message(**message_dict)
+        self.history.append(message)
 
     def display_conversation(self):
         for message in self.history:
