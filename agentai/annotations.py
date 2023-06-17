@@ -8,6 +8,7 @@ from typing import Any, Callable
 from pydantic import validate_arguments
 
 from .tool_registry import ToolRegistry
+from .conversation import Conversation
 
 
 class tool:
@@ -43,12 +44,15 @@ class tool:
         func.execute_from_completion = lambda completion: self.execute_from_completion(
             func, completion
         )
+        func.from_conversation = lambda conversation: self.from_conversation(
+            func, conversation
+        )
         self.registry.add(func)  # Register the function in the passed registry
         return func
 
-    # def from_conversation(self, conversation: Conversation, model: str):
-    #     mock_registry = ToolRegistry()
-    #     mock_registry.add(self)
+    def from_conversation(self, func, conversation: Conversation):
+        """Execute the function from a conversation"""
+        raise NotImplementedError
 
     def from_completion(self, func, completion):
         """Execute the function from the response of an openai chat completion"""
