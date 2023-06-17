@@ -2,7 +2,7 @@
 API functions for the agentai package
 """
 import json
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Tuple, Union
 
 from loguru import logger
 from openai import ChatCompletion
@@ -22,7 +22,7 @@ def chat_complete(
     conversation: Conversation,
     model: str,
     tool_registry: ToolRegistry = None,
-    return_function_params: bool = False,
+    function_call: Union[str, dict] = "auto",
 ):
     messages = [message.dict(exclude_unset=True) for message in conversation.history]
     if len(messages) == 0:
@@ -34,33 +34,19 @@ def chat_complete(
         else []
     )
 
-    if len(functions) == 0 and return_function_params:
+    if len(functions) == 0 and function_call is not None:
         raise UserWarning("No functions registered but expecting function parameters")
 
     completion = ChatCompletion.create(
         model=model,
         messages=messages,
         functions=functions,
+        function_call=function_call,
     )
 
     message = completion.choices[0].message
     logger.info(f"OpenAI API returned: {message}")
-    # When function params are expected
-    if return_function_params:
-        finish_reason = completion.choices[0].get("finish_reason", None)
-        if finish_reason is not None and finish_reason == "function_call":
-            logger.info(f"Got Function Call: {completion}")
-            return completion
-        raise ValueError(f"Expected function parameters, but received: {completion}")
-
-    # When a message is expected
-    if message["content"] is not None:
-        logger.info(f"Got Message: {completion}")
-        return completion
-
-    raise ValueError(
-        f"Expected a message, but received function parameters: {completion}"
-    )
+    return completion
 
 
 @retry(
@@ -89,7 +75,7 @@ def chat_complete_execute_fn(
         conversation=conversation,
         tool_registry=tool_registry,
         model=model,
-        return_function_params=True,
+        function_call=True,
     )
     message = completion.choices[0].message
     function_call = message["function_call"]
