@@ -4,7 +4,7 @@ import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
-from pydantic import BaseModel, validate_arguments
+from pydantic import BaseModel
 
 
 def to_json_schema_type(type_name: str) -> str:
@@ -57,7 +57,6 @@ class ToolRegistry:
         """
         Register a function to the registry.
         """
-        func.validate = validate_arguments(func)
         self.functions[func.__name__] = func
 
     def function_schema(self, func: Callable) -> dict:

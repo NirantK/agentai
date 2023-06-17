@@ -5,21 +5,9 @@ Uses docstring and type annotations to give a JSON format that can be used by th
 import json
 from typing import Any, Callable
 
-from openai import ChatCompletion
+from pydantic import validate_arguments
 
 from .tool_registry import ToolRegistry
-
-
-def ai_execute(self, name: str, completion: ChatCompletion) -> Any:
-    """
-    Execute a function by name with the given completion.
-    """
-    func = self.functions[name]
-    function_arguments = json.loads(
-        completion.choices[0].message["function_call"]["arguments"]
-    )
-    func.validate(**function_arguments)
-    return func(**function_arguments)
 
 
 class tool:
@@ -50,6 +38,11 @@ class tool:
                 )
 
         func._schema = self.registry.function_schema(func)
+        func.validate_func = validate_arguments(func)
+        func.from_completion = lambda completion: self.from_completion(func, completion)
+        func.execute_from_completion = lambda completion: self.execute_from_completion(
+            func, completion
+        )
         self.registry.add(func)  # Register the function in the passed registry
         return func
 
@@ -57,16 +50,17 @@ class tool:
     #     mock_registry = ToolRegistry()
     #     mock_registry.add(self)
 
-    def from_completion(self, completion, throw_error=True):
+    def from_completion(self, func, completion):
         """Execute the function from the response of an openai chat completion"""
         message = completion.choices[0].message
-
-        if throw_error:
-            assert "function_call" in message, "No function call detected"
-            assert (
-                message["function_call"]["name"] == self.schema["name"]
-            ), "Function name does not match"
-
         function_call = message["function_call"]
         arguments = json.loads(function_call["arguments"])
-        return self.validate_func(**arguments)
+        func.validate_func(**arguments)
+        return arguments
+
+    def execute_from_completion(self, func, completion):
+        """
+        Execute a function by name with the given completion.
+        """
+        function_arguments = func.from_completion(completion)
+        return func(**function_arguments)
