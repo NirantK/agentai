@@ -4,7 +4,7 @@ import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
-from pydantic import validate_arguments
+from pydantic import BaseModel, validate_arguments
 
 
 def to_json_schema_type(type_name: str) -> str:
@@ -70,8 +70,15 @@ class ToolRegistry:
 
         for name, param in signature.parameters.items():
             json_type = parse_annotation(param.annotation)
+            param_info = None
 
-            if (
+            if isinstance(param.annotation, type) and issubclass(
+                param.annotation, BaseModel
+            ):
+                # If the parameter is a Pydantic object
+                param_info = param.annotation.schema()
+                param_info["description"] = param.annotation.__doc__
+            elif (
                 isinstance(json_type, tuple) and json_type[0] == "enum"
             ):  # If the type is an Enum
                 param_info = {
