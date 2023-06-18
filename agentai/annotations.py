@@ -39,7 +39,7 @@ class tool:
                 )
 
         func._schema = self.registry.function_schema(func)
-        func.validate_func = validate_arguments(func)
+        func.validate_func = validate_arguments(func).model.schema()
         func.from_completion = lambda completion: self.from_completion(func, completion)
         func.execute_from_completion = lambda completion: self.execute_from_completion(
             func, completion
