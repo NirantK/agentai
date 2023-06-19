@@ -2,8 +2,6 @@
 
 It is designed to make it easy to use OpenAI models e.g. GPT3.5-Turbo and GPT4 with existing Python functions by adding a simple decorator.
 
-interact with databases, and handle structured data types.
-
 AgentAI is a simple Python library with these ethos:
 
 1. Let developers write code!
@@ -17,9 +15,14 @@ Unlike some libraries, AgentAI does NOT require you to learn a new syntax. No ch
 Instead, it empowers you to add OpenAI functions using Python decorators and then call them directly from your code.
 This makes it easy to integrate AgentAI with your existing projects.
 
+## Colab Notebooks
+
+1. Extract detailed entities using Pydantic: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/NirantK/agentai/blob/main/docs/03_Pydantic.ipynb)
+
 ## Features
 
 - **API Calls**: Use AgentAI to decorate your Python functions and make them magical!
+- **Nested Pydantic Objects for Extraction**: Use nested Pydantic objects to extract information from the user.
 - **SQL Database Interaction**: Seamlessly extract and utilize data from SQL databases.
 - **Function Execution**: Generate and execute function calls based on conversation context.
 - **Conversation Management**: Effectively manage and track the state of conversations. Easily define your own functions which can use messages, functions, and conversation history.
