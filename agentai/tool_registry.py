@@ -42,6 +42,36 @@ def parse_annotation(annotation):
         return to_json_schema_type(annotation.__name__)
 
 
+def get_pydantic_schema(pydantic_obj: BaseModel, visited_models=None) -> dict:
+    if visited_models is None:
+        visited_models = set()
+
+    if pydantic_obj in visited_models:
+        raise ValueError(f"Circular reference detected: {pydantic_obj.__name__}")
+
+    visited_models.add(pydantic_obj)
+
+    schema = pydantic_obj.schema()
+    definitions = schema.pop("definitions", {})
+
+    def resolve_schema(schema):
+        if "$ref" in schema:
+            ref_path = schema["$ref"]
+            definition_key = ref_path.split("/")[-1]
+            return resolve_schema(definitions[definition_key])
+        elif "items" in schema:
+            schema["items"] = resolve_schema(schema["items"])
+        return schema
+
+    schema = resolve_schema(schema)
+    for name, property in schema["properties"].items():
+        schema["properties"][name] = resolve_schema(property)
+
+    visited_models.remove(pydantic_obj)
+
+    return schema
+
+
 class ToolRegistry:
     """
     A registry for functions that can be called by the OpenAI API.
@@ -75,12 +105,11 @@ class ToolRegistry:
                 param.annotation, BaseModel
             ):
                 # If the parameter is a Pydantic object
-                val_func = validate_arguments(func)
-                param_info = val_func.model.schema()
+                # val_func = validate_arguments(func)
+                param_info = get_pydantic_schema(param.annotation)
                 param_info["description"] = param.annotation.__doc__
-                required.append(
-                    name
-                )  # Add Pydantic object parameter to the required list
+                # Add Pydantic object parameter to the required list
+                required.append(name)
             elif (
                 isinstance(json_type, tuple) and json_type[0] == "enum"
             ):  # If the type is an Enum
