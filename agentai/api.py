@@ -6,7 +6,14 @@ from typing import Any, Callable, Tuple, Union
 
 from loguru import logger
 from openai import ChatCompletion
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
+from openai.error import RateLimitError
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+    wait_random,
+)
 
 from .conversation import Conversation
 from .tool_registry import ToolRegistry
@@ -15,8 +22,9 @@ logger.disable(__name__)
 
 
 @retry(
-    retry=retry_if_exception_type(ValueError),
+    retry=retry_if_exception_type((ValueError, RateLimitError)),
     stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
 )
 def chat_complete(
     conversation: Conversation,
@@ -28,11 +36,7 @@ def chat_complete(
     if len(messages) == 0:
         raise UserWarning("Conversation history is empty")
 
-    functions = (
-        tool_registry.get_all_function_information()
-        if tool_registry is not None
-        else []
-    )
+    functions = tool_registry.get_all_function_information() if tool_registry is not None else []
 
     if len(functions) == 0 and function_call is not None:
         raise UserWarning("No functions registered but expecting function parameters")
