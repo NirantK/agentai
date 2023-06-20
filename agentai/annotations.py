@@ -7,8 +7,8 @@ from typing import Any, Callable
 
 from pydantic import validate_arguments
 
-from .tool_registry import ToolRegistry
 from .conversation import Conversation
+from .tool_registry import ToolRegistry
 
 
 class tool:
@@ -26,27 +26,17 @@ class tool:
         # Check if the function has dependencies
         if self.depends_on:
             # Check if the dependency is a function and get its name, else assume it's a string
-            dependency_name = (
-                self.depends_on.__name__
-                if callable(self.depends_on)
-                else self.depends_on
-            )
+            dependency_name = self.depends_on.__name__ if callable(self.depends_on) else self.depends_on
 
             # Check if the dependency exists in the registry
             if dependency_name not in self.registry.functions:
-                raise ValueError(
-                    f"Dependency function '{dependency_name}' is not registered in the registry"
-                )
+                raise ValueError(f"Dependency function '{dependency_name}' is not registered in the registry")
 
         func._schema = self.registry.function_schema(func)
         func.validate_func = validate_arguments(func).model.schema()
         func.from_completion = lambda completion: self.from_completion(func, completion)
-        func.execute_from_completion = lambda completion: self.execute_from_completion(
-            func, completion
-        )
-        func.from_conversation = lambda conversation: self.from_conversation(
-            func, conversation
-        )
+        func.execute_from_completion = lambda completion: self.execute_from_completion(func, completion)
+        func.from_conversation = lambda conversation: self.from_conversation(func, conversation)
         self.registry.add(func)  # Register the function in the passed registry
         return func
 

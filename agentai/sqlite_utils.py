@@ -43,9 +43,7 @@ class DBUtils:
         table_dicts = []
         for table_name in self.get_table_names():
             columns_names = self.get_column_names(table_name)
-            table_dicts.append(
-                {"table_name": table_name, "column_names": columns_names}
-            )
+            table_dicts.append({"table_name": table_name, "column_names": columns_names})
         return table_dicts
 
     @lru_cache()

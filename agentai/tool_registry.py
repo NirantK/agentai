@@ -4,7 +4,7 @@ import typing
 from typing import Any, Callable
 
 from docstring_parser import parse
-from pydantic import BaseModel, validate_arguments
+from pydantic import BaseModel
 
 
 def to_json_schema_type(type_name: str) -> str:
@@ -24,15 +24,10 @@ def to_json_schema_type(type_name: str) -> str:
 
 def parse_annotation(annotation):
     if getattr(annotation, "__origin__", None) == typing.Union:
-        types = [
-            t.__name__ if t.__name__ != "NoneType" else "None"
-            for t in annotation.__args__
-        ]
+        types = [t.__name__ if t.__name__ != "NoneType" else "None" for t in annotation.__args__]
         return to_json_schema_type(types[0])
     elif issubclass(annotation, enum.Enum):  # If the annotation is an Enum type
-        return "enum", [
-            item.name for item in annotation
-        ]  # Return 'enum' and a list of the names of the enum members
+        return "enum", [item.name for item in annotation]  # Return 'enum' and a list of the names of the enum members
     elif getattr(annotation, "__origin__", None) is not None:
         if annotation._name is not None:
             return f"{to_json_schema_type(annotation._name)}[{','.join([to_json_schema_type(i.__name__) for i in annotation.__args__])}]"
@@ -101,33 +96,23 @@ class ToolRegistry:
             json_type = parse_annotation(param.annotation)
             param_info = None
 
-            if isinstance(param.annotation, type) and issubclass(
-                param.annotation, BaseModel
-            ):
+            if isinstance(param.annotation, type) and issubclass(param.annotation, BaseModel):
                 # If the parameter is a Pydantic object
                 # val_func = validate_arguments(func)
                 param_info = get_pydantic_schema(param.annotation)
                 param_info["description"] = param.annotation.__doc__
                 # Add Pydantic object parameter to the required list
                 required.append(name)
-            elif (
-                isinstance(json_type, tuple) and json_type[0] == "enum"
-            ):  # If the type is an Enum
+            elif isinstance(json_type, tuple) and json_type[0] == "enum":  # If the type is an Enum
                 param_info = {
                     "type": "string",
-                    "enum": json_type[
-                        1
-                    ],  # Add an 'enum' field with the names of the enum members
+                    "enum": json_type[1],  # Add an 'enum' field with the names of the enum members
                     "description": "",
                 }
             else:
                 param_info = {"type": json_type, "description": ""}
 
-            if (
-                json_type != "any"
-                and name != "self"
-                and param.default == inspect.Parameter.empty
-            ):
+            if json_type != "any" and name != "self" and param.default == inspect.Parameter.empty:
                 required.append(name)
 
             for doc_param in docstring_parsed.params:

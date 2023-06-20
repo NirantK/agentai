@@ -11,14 +11,15 @@ class Message(BaseModel):
 
 
 class Conversation:
-    def __init__(self):
-        self.history: List[Message] = []
+    def __init__(self, history: List[Message] = [], id: Optional[str] = None):
+        self.history: List[Message] = history
         self.role_to_color = {
             "system": "red",
             "user": "green",
             "assistant": "blue",
             "function": "magenta",
         }
+        self.id = id
 
     def add_message(self, role: str, content: str, name: Optional[str] = None):
         message_dict = {"role": role, "content": content}
