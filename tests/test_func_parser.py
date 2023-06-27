@@ -5,9 +5,7 @@ from agentai.function_parser import get_function_info
 paper_dir_filepath = "examples/paper_dir"
 
 
-def get_articles(
-    query: str, library: str = paper_dir_filepath, top_k: Optional[int] = 5
-) -> List[Dict[str, str]]:
+def get_articles(query: str, library: str = paper_dir_filepath, top_k: Optional[int] = 5) -> List[Dict[str, str]]:
     """
     This function gets the top_k articles based on a user's query, sorted by relevance.
     It also downloads the files and stores them in arxiv_library.csv to be retrieved by the read_article_and_summarize.
