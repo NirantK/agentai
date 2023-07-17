@@ -62,7 +62,7 @@ class TemperatureUnit(Enum):
     fahrenheit = "fahrenheit"
 
 
-@tool(regsitry=weather_registry)
+@tool(registry=weather_registry)
 def get_current_weather(location: str, format: TemperatureUnit) -> str:
     """
     Get the current weather
