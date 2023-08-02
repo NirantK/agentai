@@ -22,7 +22,7 @@ class Conversation:
             "function": "magenta",
         }
         self.id = id
-        self.max_tokens = max_tokens
+        self.max_history_tokens = max_history_tokens
 
     def add_message(self, role: str, content: str, name: Optional[str] = None) -> None:
         message_dict = {"role": role, "content": content}
@@ -56,7 +56,7 @@ class Conversation:
             content = message.content
             tokens = len(enc.encode(content))
             total_tokens += tokens
-            if total_tokens > self.max_tokens:
+            if total_tokens > self.max_history_tokens:
                 # Trim the history inplace to keep the total tokens under max_tokens
                 self.history = self.history[i + 1 :]
                 break
