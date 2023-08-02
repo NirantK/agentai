@@ -13,7 +13,7 @@ class Message(BaseModel):
 
 
 class Conversation:
-    def __init__(self, history: List[Message] = [], id: Optional[str] = None, max_tokens: int = 100):
+    def __init__(self, history: List[Message] = [], id: Optional[str] = None, max_history_tokens: int = 200):
         self.history: List[Message] = history
         self.role_to_color = {
             "system": "red",
