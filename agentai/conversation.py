@@ -50,7 +50,8 @@ class Conversation:
             local.gpt2enc = enc
 
         total_tokens = 0
-        for i in range(len(self.history) - 1, -1, -1):
+        # Iterate 2 at a time to avoid cutting in between a (prompt, response) pair
+        for i in range(len(self.history) -1, -1, -2):
             # Iterate over the messages in reverse order - from the latest to the oldest messages
             message = self.history[i]  # Message(role='User', content='I appreciate that. Take care too!', name=None)
             content = message.content
