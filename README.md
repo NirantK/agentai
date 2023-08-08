@@ -83,7 +83,7 @@ Note that `agentai` automatically parses the Python Enum type (TemperatureUnit) 
 3. **Create a Conversation object and add messages**
 
 ```python
-conversation = Conversation()
+conversation = Conversation(model=GPT_MODEL)
 conversation.add_message("user", "what is the weather like today?")
 ```
 
@@ -152,7 +152,7 @@ agent_system_message = """You are ChinookGPT, a helpful assistant who gets answe
 Provide as many details as possible to your users
 Begin!"""
 
-sql_conversation = Conversation()
+sql_conversation = Conversation(model=GPT_MODEL)
 sql_conversation.add_message(role="system", content=agent_system_message)
 sql_conversation.add_message("user", "Hi, who are the top 5 artists by number of tracks")
 assistant_message = chat_complete_execute_fn(
