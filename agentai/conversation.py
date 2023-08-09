@@ -17,9 +17,9 @@ class Conversation:
         self,
         history: List[Message] = [],
         id: Optional[str] = None,
-        max_history_tokens: int = 200,
-        model: str = "gpt-3.5-turbo",
-    ):
+        max_history_tokens: Optional[int] = None,
+        model: Optional[str] = None,
+    ) -> None:
         self.history: List[Message] = history
         self.trimmed_history: List[Message] = []
         self.role_to_color = {
@@ -38,7 +38,8 @@ class Conversation:
             message_dict["name"] = name
         message = Message(**message_dict)
         self.history.append(message)
-        self.trim_history()
+        if self.max_history_tokens and self.model:
+            self.trim_history()
 
     def display_conversation(self) -> None:
         for message in self.history:
@@ -51,6 +52,12 @@ class Conversation:
 
     def trim_history(self) -> None:
         """Function to get the conversation history based on the number of tokens"""
+
+        # raise an error if max_history_tokens or model is not set
+        if not self.max_history_tokens:
+            raise ValueError("max_history_tokens is not set in Conversation")
+        if not self.model:
+            raise ValueError("model is not set in Conversation")
 
         local = threading.local()
         try:
