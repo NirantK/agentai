@@ -14,7 +14,11 @@ class Message(BaseModel):
 
 class Conversation:
     def __init__(
-        self, history: List[Message] = [], id: Optional[str] = None, max_history_tokens: int = 200, model: str = "gpt2"
+        self,
+        history: List[Message] = [],
+        id: Optional[str] = None,
+        max_history_tokens: int = 200,
+        model: str = "gpt-3.5-turbo",
     ):
         self.history: List[Message] = history
         self.trimmed_history: List[Message] = []
