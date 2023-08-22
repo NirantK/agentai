@@ -7,9 +7,9 @@ from agentai.annotations import tool, ToolRegistry
 
 
 class Query(BaseModel):
-    query_embedding: List[int] = Field(..., description="Embedding for the query to srach")
+    query_embedding: Optional[List[int]] = Field(..., description="Embedding for the query to search")
     query_text: Optional[str] = Field(..., description="Simplified query from the user to search")
-    k: str = Field(..., description="The number of results requested")
+    k: int = Field(..., description="The number of results requested")
 
 
 class VectorDB(BaseModel):
