@@ -1,9 +1,11 @@
-import chromadb
-from parsers import Parser
 import uuid
-from pydantic import BaseModel, Field
 from typing import List, Optional
-from agentai.annotations import tool, ToolRegistry
+
+import chromadb
+from .parsers import Parser
+from pydantic import BaseModel, Field
+
+from agentai.annotations import ToolRegistry, tool
 
 
 class Query(BaseModel):
@@ -13,7 +15,8 @@ class Query(BaseModel):
 
 
 class VectorDB(BaseModel):
-    self.client = None
+    def __init__(self):
+        self.client = None
 
 
 class ChromaDB(VectorDB):
@@ -37,3 +40,6 @@ class ChromaDB(VectorDB):
             query_embeddings=[query.query_embedding], query_texts=[query.query_text], n_results=query.k
         )
         return results
+
+    def get_count(self):
+        return self.collection.count()
