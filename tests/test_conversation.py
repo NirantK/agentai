@@ -5,12 +5,12 @@ from agentai.conversation import Conversation, Message
 
 @pytest.fixture
 def conversation():
-    '''Returns a Conversation object'''
+    """Returns a Conversation object"""
     return Conversation()
 
 
 def test_add_message(conversation):
-    '''Tests the add_message method of the Conversation class'''
+    """Tests the add_message method of the Conversation class"""
     conversation.add_message("User", "Hello")
     assert conversation.history == [Message(role="User", content="Hello", name=None)]
     conversation.history.pop()  # Rollback the addition of the message
@@ -18,7 +18,7 @@ def test_add_message(conversation):
 
 
 def test_add_message_with_name(conversation):
-    '''Tests the add_message method of the Conversation class with an Optional name'''
+    """Tests the add_message method of the Conversation class with an Optional name"""
     conversation.add_message("Assistant", "Hi there!", "AI")
     assert conversation.history == [Message(role="Assistant", content="Hi there!", name="AI")]
     conversation.history.pop()  # Rollback the addition of the message
@@ -26,7 +26,7 @@ def test_add_message_with_name(conversation):
 
 
 def test_get_history(conversation):
-    '''Tests the get_history method of the Conversation class'''
+    """Tests the get_history method of the Conversation class"""
     conversation.add_message("User", "Hello!")
     conversation.add_message("Assistant", "Hi there!")
     conversation.add_message("User", "How are you?")
@@ -162,8 +162,8 @@ def test_get_history(conversation):
 
 
 def test_trim_history():
-    ''' Test to check that the trimmed history is correct.
-    model = 'gpt3.5-turbo' and max_history_tokens = 200 '''
+    """Test to check that the trimmed history is correct.
+    model = 'gpt3.5-turbo' and max_history_tokens = 200"""
     conversation_with_tokens = Conversation(max_history_tokens=200, model="gpt-3.5-turbo")
     conversation_with_tokens.add_message("User", "Hello!")
     conversation_with_tokens.add_message("Assistant", "Hi there!")
@@ -259,7 +259,7 @@ def test_trim_history():
 
 
 def test_missing_params():
-    '''Test to check that the ValueError is raised when max_history_tokens or model is not set when trim_history is called'''
+    """Test to check that the ValueError is raised when max_history_tokens or model is not set when trim_history is called"""
     conversation = Conversation()
     with pytest.raises(ValueError):
         conversation.trim_history()
