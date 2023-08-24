@@ -20,24 +20,49 @@ def parse_tables(tables: List[Any]) -> List[Document]:
 
     # Goal: Rewrite the above table code using using pandas
     for table_idx, table in enumerate(tables):
-        l = list()
-        row_count = table.row_count
-        column_count = table.column_count
-        for cell in table.cells:
-            l.append(cell.content)
-        # Create a dataframe from the numpy array
-        df = pd.DataFrame(np.array(l).reshape(row_count, column_count))
-        df.columns = df.iloc[0]
-        df = df.drop(df.index[0])
+        # l = list()
+        # row_count = table.row_count
+        # column_count = table.column_count
+        # for cell in table.cells:
+        #     l.append(cell.content)
+        # # Create a dataframe from the numpy array
+        # df = pd.DataFrame(np.array(l).reshape(row_count, column_count))
+        # df.columns = df.iloc[0]
+        # df = df.drop(df.index[0])
         metadata = {}
-        #
         # metadata["filename"] = filename
         # metadata["filetype"] = filetype
+
+        json_data = table.to_dict()
+        # Extract column headers
+        column_headers = []
+        for cell in json_data["cells"]:
+            if cell["kind"] == "columnHeader":
+                column_headers.append(cell["content"])
+
+        # Initialize an empty DataFrame with column headers
+        df = pd.DataFrame(columns=column_headers)
+
+        # Fill in the DataFrame with cell content
+        for row_index in range(json_data["row_count"]):
+            row_data = []
+            for col_index in range(json_data["column_count"]):
+                content = next(
+                    cell["content"]
+                    for cell in json_data["cells"]
+                    if cell["row_index"] == row_index and cell["column_index"] == col_index
+                )
+                row_data.append(content)
+            df.loc[row_index] = row_data
+
+        # Drop the first row since it contains column headers repeating
+        df = df.drop(df.index[0])
 
         for _, row in df.iterrows():
             # go through each row of the table and create a document
             # with the row data dictionary as page content
             metadata["category"] = "Table"
+            metadata["page_number"] = json_data["bounding_regions"][0]["page_number"]
             page_content = row.to_dict()
 
             all_row_data.append(Document(page_content=str(page_content), metadata=metadata))
@@ -77,14 +102,14 @@ def format_document_analysis_result(document_analysis_result: Dict) -> List[Docu
     return formatted_result
 
 
-def analyze_layout(document_path: str):
+def analyze_layout(document_path: str, pages: str = None):
     document_analysis_client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
     document_src_type = detect_file_src_type(document_path)
     if document_src_type == "local":
         with open(document_path, "rb") as document:
-            poller = document_analysis_client.begin_analyze_document("prebuilt-layout", document)
+            poller = document_analysis_client.begin_analyze_document("prebuilt-layout", document, pages=pages)
     elif document_src_type == "remote":
-        poller = document_analysis_client.begin_analyze_document_from_url("prebuilt-layout", document_path)
+        poller = document_analysis_client.begin_analyze_document_from_url("prebuilt-layout", document_path, pages=pages)
     else:
         raise ValueError(f"Invalid document path: {document_path}")
 
@@ -107,7 +132,7 @@ def analyze_layout(document_path: str):
 if __name__ == "__main__":
     # sample document
     # document_path = "https://raw.githubusercontent.com/Azure-Samples/cognitive-services-REST-api-samples/master/curl/form-recognizer/sample-layout.pdf"
-    # document_path = "ast_sci_data_tables_sample.pdf"
-    document_analysis_result = analyze_layout(document_path=document_path)
+    document_path = "hesc101.pdf"
+    document_analysis_result = analyze_layout(document_path=document_path, pages=None)  # pages="1-2, 5-6"
     formatted_doc = format_document_analysis_result(document_analysis_result)
     print(formatted_doc)
