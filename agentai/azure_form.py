@@ -1,6 +1,6 @@
 # import libraries
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,15 @@ from azure.core.credentials import AzureKeyCredential
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.tools.azure_cognitive_services.utils import detect_file_src_type
+from pydantic import BaseModel, Field
+
+
+class AzureDocumentIntelligence(BaseModel):
+    document_path: str = Field(..., description="Path to the document to be parsed. Can be a local path or a URL")
+    pages: Optional[str] = Field(
+        ..., description="Pages to be parsed. Example: '1-3', '5-6'. If None, all pages will be parsed"
+    )
+
 
 # set `<your-endpoint>` and `<your-key>` variables with the values from the Azure portal
 endpoint = "<your-endpoint>"
@@ -19,16 +28,7 @@ def parse_tables(tables: List[Any]) -> List[Document]:
     all_row_data = []
 
     # Goal: Rewrite the above table code using using pandas
-    for table_idx, table in enumerate(tables):
-        # l = list()
-        # row_count = table.row_count
-        # column_count = table.column_count
-        # for cell in table.cells:
-        #     l.append(cell.content)
-        # # Create a dataframe from the numpy array
-        # df = pd.DataFrame(np.array(l).reshape(row_count, column_count))
-        # df.columns = df.iloc[0]
-        # df = df.drop(df.index[0])
+    for table in tables:
         metadata = {}
         # metadata["filename"] = filename
         # metadata["filetype"] = filetype
@@ -83,35 +83,38 @@ def parse_kv_pairs(kv_pairs: List[Any]) -> List[Document]:
     return result
 
 
-def format_document_analysis_result(document_analysis_result: Dict) -> List[Document]:
+def format_document_analysis_result(doc_dictionary: Dict) -> List[Document]:
     formatted_result = []
-    if "content" in document_analysis_result:
+    if "content" in doc_dictionary:
         # split the content into chunks of 300 characters with 30 character overlap
         splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=300, chunk_overlap=30)
         # metadatas is a list of dictionaries with key "category" and value "Text".
         # The length of metadatas is the same as the length of document_analysis_result["content"]
-        metadatas = [{"category": "Text"}] * len(document_analysis_result["content"])
+        metadatas = [{"category": "Text"}] * len(doc_dictionary["content"])
 
-        splits = splitter.create_documents(texts=[document_analysis_result["content"]], metadatas=metadatas)
+        splits = splitter.create_documents(texts=[doc_dictionary["content"]], metadatas=metadatas)
         formatted_result.append(splits)
-    if "tables" in document_analysis_result:
-        formatted_result.extend(document_analysis_result["tables"])
-    if "key_value_pairs" in document_analysis_result:
-        formatted_result.extend(document_analysis_result["key_value_pairs"])
+    if "tables" in doc_dictionary:
+        formatted_result.extend(doc_dictionary["tables"])
+    if "key_value_pairs" in doc_dictionary:
+        formatted_result.extend(doc_dictionary["key_value_pairs"])
 
     return formatted_result
 
 
-def analyze_layout(document_path: str, pages: str = None):
+def parse_pdf(doc: AzureDocumentIntelligence) -> List[Document]:
+    # print(params)
     document_analysis_client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
-    document_src_type = detect_file_src_type(document_path)
+    document_src_type = detect_file_src_type(doc.document_path)
     if document_src_type == "local":
-        with open(document_path, "rb") as document:
-            poller = document_analysis_client.begin_analyze_document("prebuilt-layout", document, pages=pages)
+        with open(doc.document_path, "rb") as document:
+            poller = document_analysis_client.begin_analyze_document("prebuilt-layout", document, pages=doc.pages)
     elif document_src_type == "remote":
-        poller = document_analysis_client.begin_analyze_document_from_url("prebuilt-layout", document_path, pages=pages)
+        poller = document_analysis_client.begin_analyze_document_from_url(
+            "prebuilt-layout", doc.document_path, pages=doc.pages
+        )
     else:
-        raise ValueError(f"Invalid document path: {document_path}")
+        raise ValueError(f"Invalid document path: {doc.document_path}")
 
     result = poller.result()
 
@@ -126,13 +129,13 @@ def analyze_layout(document_path: str, pages: str = None):
     if result.key_value_pairs is not None:
         res_dict["key_value_pairs"] = parse_kv_pairs(result.key_value_pairs)
 
-    return res_dict
+    return format_document_analysis_result(res_dict)
 
 
 if __name__ == "__main__":
     # sample document
     # document_path = "https://raw.githubusercontent.com/Azure-Samples/cognitive-services-REST-api-samples/master/curl/form-recognizer/sample-layout.pdf"
     document_path = "hesc101.pdf"
-    document_analysis_result = analyze_layout(document_path=document_path, pages=None)  # pages="1-2, 5-6"
-    formatted_doc = format_document_analysis_result(document_analysis_result)
-    print(formatted_doc)
+    document = AzureDocumentIntelligence(document_path="hesc101.pdf", pages="12-13")
+    # Call the parse_pdf function with the instance
+    print(parse_pdf(document))
