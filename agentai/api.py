@@ -1,7 +1,6 @@
 """
 API functions for the agentai package
 """
-import json
 from typing import Any, Callable, Tuple, Union
 
 from loguru import logger
@@ -17,6 +16,7 @@ from tenacity import (
 
 from .conversation import Conversation
 from .tool_registry import ToolRegistry
+from .utils.parse_json import parse_json
 
 logger.disable(__name__)
 
@@ -79,16 +79,14 @@ def chat_complete_execute_fn(
         conversation=conversation,
         tool_registry=tool_registry,
         model=model,
-        function_call=True,
+        function_call="auto",
     )
     message = completion.choices[0].message
     function_call = message["function_call"]
-    function_arguments = json.loads(function_call["arguments"])
-    logger.info(f"function_arguments: {function_arguments}")
+    function_arguments = parse_json(function_call["arguments"])
     callable_function = tool_registry.get(function_call["name"])
     logger.info(f"callable_function: {callable_function}")
-    callable_function.validate(**function_arguments)
-    logger.info("Validated function arguments")
+    # callable_function.validate(**function_arguments)
+    # logger.info("Validated function arguments")
     results = callable_function(**function_arguments)
-    logger.info(f"results: {results}")
     return results, function_arguments, callable_function
