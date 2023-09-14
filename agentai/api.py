@@ -1,12 +1,14 @@
 """
 API functions for the agentai package
 """
+import inspect
 import json
 from typing import Any, Callable, Tuple, Union
 
 from loguru import logger
 from openai import ChatCompletion
 from openai.error import RateLimitError
+from pydantic import BaseModel
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -19,6 +21,18 @@ from .conversation import Conversation
 from .tool_registry import ToolRegistry
 
 logger.disable(__name__)
+
+
+def validate_function_args(func, args):
+    parameters = inspect.signature(func).parameters
+    validated_args = {}
+    for param_name, param_value in args.items():
+        if param_name in parameters:
+            param_type = parameters[param_name].annotation
+            if issubclass(param_type, BaseModel):
+                param_value = param_type(**param_value)
+            validated_args[param_name] = param_value
+    return validated_args
 
 
 @retry(
@@ -79,7 +93,7 @@ def chat_complete_execute_fn(
         conversation=conversation,
         tool_registry=tool_registry,
         model=model,
-        function_call=True,
+        function_call="auto",
     )
     message = completion.choices[0].message
     function_call = message["function_call"]
@@ -87,8 +101,8 @@ def chat_complete_execute_fn(
     logger.info(f"function_arguments: {function_arguments}")
     callable_function = tool_registry.get(function_call["name"])
     logger.info(f"callable_function: {callable_function}")
-    callable_function.validate(**function_arguments)
+    validated_args = validate_function_args(callable_function, function_arguments)
     logger.info("Validated function arguments")
-    results = callable_function(**function_arguments)
+    results = callable_function(**validated_args)
     logger.info(f"results: {results}")
     return results, function_arguments, callable_function
