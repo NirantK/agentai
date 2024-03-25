@@ -5,8 +5,8 @@ import json
 from typing import Any, Callable, Tuple, Union
 
 from loguru import logger
-from openai import ChatCompletion
-from openai.error import RateLimitError
+from openai import OpenAI
+from openai._exceptions import RateLimitError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -40,8 +40,8 @@ def chat_complete(
 
     if len(functions) == 0 and function_call is not None:
         raise UserWarning("No functions registered but expecting function parameters")
-
-    completion = ChatCompletion.create(
+    client = OpenAI()
+    completion = client.chat.completions.create(
         model=model,
         messages=messages,
         functions=functions,
