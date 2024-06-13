@@ -37,7 +37,7 @@ class Parser:
 
     def parse_pdf(self, filename: str):
         self.filename = filename
-        elements = partition_pdf(self.filename)
+        elements = partition_pdf(self.filename, infer_table_structure=True)
         for element in elements:
             self.process_element(element)
         return self.docs
